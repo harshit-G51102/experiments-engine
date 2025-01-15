@@ -112,4 +112,4 @@ async def get_mab_by_id(
         .where(MultiArmedBanditDB.experiment_id == experiment_id)
     )
 
-    return result.scalar_one_or_none()
+    return result.unique().scalar_one_or_none()
