@@ -10,7 +10,7 @@ guard-%:
 
 # Note: Run `make fresh-env psycopg2-binary=true` to manually replace psycopg with psycopg2-binary
 fresh-env :
-	conda remove --name $(PROJECT_NAME) --all -y
+	-conda remove --name $(PROJECT_NAME) --all -y
 	conda create --name $(PROJECT_NAME) python==3.12 -y
 
 	$(CONDA_ACTIVATE) $(PROJECT_NAME); \
@@ -59,3 +59,13 @@ setup-redis:
 make teardown-redis:
 	@docker stop redis-experiment-local
 	@docker rm redis-experiment-local
+
+
+make run-backend:
+	$(CONDA_ACTIVATE) $(PROJECT_NAME); \
+	make setup-db && make setup-redis && \
+	python backend/add_users_to_db.py && \
+	python backend/main.py
+
+make run-frontend:
+	cd frontend && npm run dev
