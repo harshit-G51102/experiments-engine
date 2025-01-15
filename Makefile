@@ -59,3 +59,13 @@ setup-redis:
 make teardown-redis:
 	@docker stop redis-experiment-local
 	@docker rm redis-experiment-local
+
+
+make run-backend:
+	$(CONDA_ACTIVATE) $(PROJECT_NAME); \
+	make setup-db && make setup-redis && \
+	python backend/add_users_to_db.py && \
+	python backend/main.py
+
+make run-frontend:
+	cd frontend && npm run dev
