@@ -8,13 +8,8 @@ from ..auth.dependencies import authenticate_key, get_current_user
 from ..database import get_async_session
 from ..users.models import UserDB
 from .models import get_all_mabs, get_mab_by_id, save_mab_to_db
-from .schemas import (
-    Arm,
-    ArmResponse,
-    MultiArmedBandit,
-    MultiArmedBanditResponse,
-    Outcome,
-)
+from .schemas import Arm, ArmResponse, MultiArmedBandit, MultiArmedBanditResponse
+from ..schemas import Outcome
 from ..exp_engine_utils.sampling import ts_beta_binomial
 
 router = APIRouter(prefix="/mab", tags=["Multi-Armed Bandits"])
@@ -30,7 +25,7 @@ async def create_mab(
     Create a new experiment.
     """
     response = await save_mab_to_db(experiment, user_db.user_id, asession)
-    return MultiArmedBanditResponse.validate(response)
+    return MultiArmedBanditResponse.model_validate(response)
 
 
 @router.get("/", response_model=list[MultiArmedBanditResponse])

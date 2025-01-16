@@ -1,5 +1,3 @@
-from enum import Enum
-
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -16,6 +14,7 @@ class Arm(BaseModel):
         max_length=500,
         examples=["This is a description of the arm."],
     )
+
     alpha_prior: int = Field(
         description="The alpha parameter of the beta distribution.",
         examples=[1, 10, 100],
@@ -34,6 +33,7 @@ class Arm(BaseModel):
         examples=[0, 10, 100],
         default=0,
     )
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -86,12 +86,3 @@ class MultiArmedBanditResponse(MultiArmedBanditBase):
     arms: list[ArmResponse]
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class Outcome(str, Enum):
-    """
-    Enum for the outcome of a trial.
-    """
-
-    SUCCESS = "success"
-    FAILURE = "failure"
