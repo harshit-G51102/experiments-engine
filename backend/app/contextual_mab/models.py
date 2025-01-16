@@ -1,6 +1,7 @@
 from typing import Sequence
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, select, JSON
+from sqlalchemy import Boolean, ForeignKey, Integer, Float, String, select, delete
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,10 +27,16 @@ class ContextualBanditDB(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     arms: Mapped[list["ContextualArmDB"]] = relationship(
-        "ContextualArmDB", back_populates="experiment", lazy="joined"
+        "ContextualArmDB",
+        back_populates="experiment",
+        lazy="joined",
+        cascade="all, delete-orphan",
     )
     contexts: Mapped[list["ContextDB"]] = relationship(
-        "ContextDB", back_populates="experiment", lazy="joined"
+        "ContextDB",
+        back_populates="experiment",
+        lazy="joined",
+        cascade="all, delete-orphan",
     )
 
 
@@ -47,16 +54,15 @@ class ContextualArmDB(Base):
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.user_id"), nullable=False
     )
+
     name: Mapped[str] = mapped_column(String(length=150), nullable=False)
     description: Mapped[str] = mapped_column(String(length=500), nullable=True)
 
     alpha_prior: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     beta_prior: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
-    successes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    failures: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-
-    context: Mapped[dict[str, int]] = mapped_column(JSON, nullable=False)
+    successes: Mapped[list[int]] = mapped_column(ARRAY(Integer), nullable=False)
+    failures: Mapped[list[int]] = mapped_column(ARRAY(Integer), nullable=False)
 
     experiment: Mapped[ContextualBanditDB] = relationship(
         "ContextualBanditDB", back_populates="arms", lazy="joined"
@@ -79,6 +85,8 @@ class ContextDB(Base):
     )
     name: Mapped[str] = mapped_column(String(length=150), nullable=False)
     description: Mapped[str] = mapped_column(String(length=500), nullable=True)
+    values: Mapped[list[int]] = mapped_column(ARRAY(Integer), nullable=False)
+    weight: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
 
     experiment: Mapped[ContextualBanditDB] = relationship(
         "ContextualBanditDB", back_populates="contexts", lazy="joined"
@@ -148,3 +156,28 @@ async def get_contextual_mab_by_id(
     )
 
     return result.unique().scalar_one_or_none()
+
+
+async def delete_contextual_mab_by_id(
+    experiment_id: int, user_id: int, asession: AsyncSession
+) -> None:
+    """
+    Delete the contextual experiment by id.
+    """
+    await asession.execute(
+        delete(ContextDB)
+        .where(ContextDB.user_id == user_id)
+        .where(ContextDB.experiment_id == experiment_id)
+    )
+    await asession.execute(
+        delete(ContextualArmDB)
+        .where(ContextualArmDB.user_id == user_id)
+        .where(ContextualArmDB.experiment_id == experiment_id)
+    )
+    await asession.execute(
+        delete(ContextualBanditDB)
+        .where(ContextualBanditDB.user_id == user_id)
+        .where(ContextualBanditDB.experiment_id == experiment_id)
+    )
+    await asession.commit()
+    return None

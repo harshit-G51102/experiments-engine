@@ -1,5 +1,6 @@
+from typing import List
 from pydantic import BaseModel, ConfigDict, Field
-from ..mab.schemas import Arm, MultiArmedBandit, MultiArmedBanditResponse
+from ..mab.schemas import MultiArmedBandit, MultiArmedBanditResponse
 
 
 class Context(BaseModel):
@@ -8,12 +9,20 @@ class Context(BaseModel):
     """
 
     name: str = Field(
-        max_length=150,
+        description="Name of the context",
         examples=["Context 1"],
     )
     description: str = Field(
-        max_length=500,
+        description="Description of the context",
         examples=["This is a description of the context."],
+    )
+    values: list[int] = Field(
+        description="List of values the context can", examples=[[0, 1]], default=[0, 1]
+    )
+    weight: float = Field(
+        description="Weight associated with outcome for this context",
+        examples=[1.0, 3.7, 0.5],
+        default=1.0,
     )
 
     model_config = ConfigDict(from_attributes=True)
@@ -25,21 +34,39 @@ class ContextResponse(Context):
     """
 
     context_id: int
-    name: str
-
     model_config = ConfigDict(from_attributes=True)
 
 
-class ContextualArm(Arm):
+class ContextualArm(BaseModel):
     """
     Pydantic model for a contextual arm of the experiment.
     """
 
-    context: dict[str, int] = Field(
-        description="dictionary of context id and its value for this arm",
-        examples=[{"1": 1, "2": 0}],
+    name: str = Field(
+        max_length=150,
+        examples=["Arm 1"],
+    )
+    description: str = Field(
+        max_length=500,
+        examples=["This is a description of the arm."],
     )
 
+    alpha_prior: int = Field(
+        description="The alpha parameter of the beta distribution.",
+        examples=[1, 10, 100],
+    )
+    beta_prior: int = Field(
+        description="The beta parameter of the beta distribution.",
+        examples=[1, 10, 100],
+    )
+    successes: List[int] = Field(
+        description="List of successes corresponding to each context combo.",
+        examples=[[0, 0, 0]],
+    )
+    failures: List[int] = Field(
+        description="List of failures corresponding to each context combo.",
+        examples=[[0, 0, 0]],
+    )
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -49,7 +76,6 @@ class ContextualArmResponse(ContextualArm):
     """
 
     arm_id: int
-
     model_config = ConfigDict(from_attributes=True)
 
 

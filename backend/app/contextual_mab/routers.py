@@ -11,11 +11,9 @@ from .models import (
     get_all_contextual_mabs,
     get_contextual_mab_by_id,
     save_contextual_mab_to_db,
+    delete_contextual_mab_by_id,
 )
-from ..mab.schemas import MultiArmedBandit
 from .schemas import (
-    Context,
-    ContextualArm,
     ContextualBandit,
     ContextualBanditResponse,
 )
@@ -25,55 +23,8 @@ import numpy as np
 router = APIRouter(prefix="/contextual_mab", tags=["Contextual Bandits"])
 
 
-@router.post("/no_context_priors", response_model=ContextualBanditResponse)
-async def create_contextual_mab_no_context_priors(
-    experiment: MultiArmedBandit,
-    contexts: list[Context],
-    user_db: Annotated[UserDB, Depends(get_current_user)],
-    asession: AsyncSession = Depends(get_async_session),
-) -> ContextualBanditResponse:
-    """
-    Create a new contextual experiment assuming same prior across contexts.
-    """
-    new_arms = []
-    # TODO: explicit assuming only binary contexts.
-    # Need to include logic for other types of contexts.
-    context_values = [[0, 1] for _ in contexts]
-    context_combos = (
-        np.array(np.meshgrid(*context_values)).reshape(len(contexts), -1).astype(int).T
-    )
-
-    # Split each arm into multiple arms based per context combo
-    for arm in experiment.arms:
-        for combo in context_combos:
-            context = dict(zip([str(i) for i in range(len(contexts))], combo))
-            new_arm = ContextualArm(
-                name=arm.name,
-                description=arm.description,
-                alpha_prior=arm.alpha_prior,
-                beta_prior=arm.beta_prior,
-                successes=arm.successes,
-                failures=arm.failures,
-                context=context,
-            )
-            new_arms.append(new_arm)
-
-    # Create the new experiment with the new arms
-    new_experiment = ContextualBandit(
-        name=experiment.name,
-        description=experiment.description,
-        is_active=experiment.is_active,
-        arms=new_arms,
-        contexts=contexts,
-    )
-    response = await save_contextual_mab_to_db(
-        new_experiment, user_db.user_id, asession
-    )
-    return ContextualBanditResponse.model_validate(response)
-
-
-@router.post("/context_priors", response_model=ContextualBanditResponse)
-async def create_contextual_mabs_with_priors(
+@router.post("/", response_model=ContextualBanditResponse)
+async def create_contextual_mabs(
     experiment: ContextualBandit,
     user_db: Annotated[UserDB, Depends(get_current_user)],
     asession: AsyncSession = Depends(get_async_session),
@@ -81,7 +32,17 @@ async def create_contextual_mabs_with_priors(
     """
     Create a new contextual experiment with different priors for each context.
     """
-    # TODO implement check for number of arms / contexts
+    if not (
+        len(experiment.arms[0].successes) == len(experiment.arms[0].failures)
+    ) or not (
+        len(experiment.arms[0].successes)
+        == np.prod([len(c.values) for c in experiment.contexts])
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Number of successes and failures should be equal to the product of the # values per context.",
+        )
+
     response = await save_contextual_mab_to_db(experiment, user_db.user_id, asession)
     return ContextualBanditResponse.model_validate(response)
 
@@ -102,7 +63,7 @@ async def get_contextual_mabs(
 
 
 @router.get("/{experiment_id}", response_model=ContextualBanditResponse)
-async def get_mab(
+async def get_contextual_mab(
     experiment_id: int,
     user_db: Annotated[UserDB, Depends(get_current_user)],
     asession: AsyncSession = Depends(get_async_session),
@@ -119,6 +80,22 @@ async def get_mab(
         )
 
     return ContextualBanditResponse.model_validate(experiment)
+
+
+@router.delete("/{experiment_id}", response_model=dict)
+async def delete_contextual_mab(
+    experiment_id: int,
+    user_db: Annotated[UserDB, Depends(get_current_user)],
+    asession: AsyncSession = Depends(get_async_session),
+) -> dict:
+    """
+    Delete the experiment with the provided `experiment_id`.
+    """
+    try:
+        await delete_contextual_mab_by_id(experiment_id, user_db.user_id, asession)
+        return {"detail": f"Experiment {experiment_id} deleted successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
 
 
 # @router.get("/{experiment_id}/draw", response_model=Arm)
