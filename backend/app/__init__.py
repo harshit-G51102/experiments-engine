@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from redis import asyncio as aioredis
 
-from . import auth, mab
+from . import auth, mab, contextual_mab
 from .config import REDIS_HOST
 from .users.routers import (
     router as users_router,
@@ -36,6 +36,7 @@ def create_app() -> FastAPI:
     """
     app = FastAPI(title="Experiments API", lifespan=lifespan)
     app.include_router(mab.router)
+    app.include_router(contextual_mab.router)
     app.include_router(auth.router)
     app.include_router(users_router)
 
