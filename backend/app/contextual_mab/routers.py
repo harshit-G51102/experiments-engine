@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from fastapi.exceptions import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..auth.dependencies import get_current_user
+from ..auth.dependencies import get_current_user, authenticate_key
 from ..database import get_async_session
 from ..users.models import UserDB
 from .models import (
@@ -14,10 +14,13 @@ from .models import (
     delete_contextual_mab_by_id,
 )
 from .schemas import (
+    ContextualArmResponse,
     ContextualBandit,
     ContextualBanditResponse,
 )
 import numpy as np
+from ..exp_engine_utils.sampling import ts_beta_binomial
+from ..schemas import Outcome
 
 
 router = APIRouter(prefix="/contextual_mab", tags=["Contextual Bandits"])
@@ -32,15 +35,13 @@ async def create_contextual_mabs(
     """
     Create a new contextual experiment with different priors for each context.
     """
-    if not (
-        len(experiment.arms[0].successes) == len(experiment.arms[0].failures)
-    ) or not (
-        len(experiment.arms[0].successes)
+    if (experiment.arms[0].successes.shape != experiment.arms[0].failures.shape) or (
+        experiment.arms[0].successes.size
         == np.prod([len(c.values) for c in experiment.contexts])
     ):
         raise HTTPException(
             status_code=400,
-            detail="Number of successes and failures should be equal to the product of the # values per context.",
+            detail="Successes and failures are wrong shape.",
         )
 
     response = await save_contextual_mab_to_db(experiment, user_db.user_id, asession)
@@ -98,59 +99,71 @@ async def delete_contextual_mab(
         raise HTTPException(status_code=500, detail=f"Error: {e}")
 
 
-# @router.get("/{experiment_id}/draw", response_model=Arm)
-# async def get_arm(
-#     experiment_id: int,
-#     user_db: UserDB = Depends(authenticate_key),
-#     asession: AsyncSession = Depends(get_async_session),
-# ) -> ArmResponse | HTTPException:
-#     """
-#     Get which arm to pull next for provided experiment.
-#     """
-#     experiment = await get_mab_by_id(experiment_id, user_db.user_id, asession)
-#     if experiment is None:
-#         return HTTPException(
-#             status_code=404, detail=f"Experiment with id {experiment_id} not found"
-#         )
+@router.get("/{experiment_id}/draw", response_model=ContextualArmResponse)
+async def get_arm(
+    experiment_id: int,
+    context: list[int],
+    user_db: UserDB = Depends(authenticate_key),
+    asession: AsyncSession = Depends(get_async_session),
+) -> ContextualArmResponse | HTTPException:
+    """
+    Get which arm to pull next for provided experiment.
+    """
+    experiment = await get_contextual_mab_by_id(
+        experiment_id, user_db.user_id, asession
+    )
+    if experiment is None:
+        return HTTPException(
+            status_code=404, detail=f"Experiment with id {experiment_id} not found"
+        )
 
-#     alphas = [arm.alpha_prior for arm in experiment.arms]
-#     betas = [arm.beta_prior for arm in experiment.arms]
-#     successes = [arm.successes for arm in experiment.arms]
-#     failures = [arm.failures for arm in experiment.arms]
+    # Get coordinates for indexing successes and failures for the arms
+    coordinates = [c.values.argwhere(v) for c, v in zip(experiment.contexts, context)]
 
-#     chosen_arm = ts_beta_binomial(alphas, betas, successes, failures)
+    alphas = [arm.alpha_prior for arm in experiment.arms]
+    betas = [arm.beta_prior for arm in experiment.arms]
+    successes = [arm.successes[coordinates] for arm in experiment.arms]
+    failures = [arm.failures[coordinates] for arm in experiment.arms]
 
-#     return ArmResponse.model_validate(experiment.arms[chosen_arm])
+    chosen_arm = ts_beta_binomial(alphas, betas, successes, failures)
+
+    return ContextualArmResponse.model_validate(experiment.arms[chosen_arm])
 
 
-# @router.put("/{experiment_id}/{arm_id}/{outcome}", response_model=Arm)
-# async def update_arm(
-#     experiment_id: int,
-#     arm_id: int,
-#     outcome: Outcome,
-#     user_db: UserDB = Depends(authenticate_key),
-#     asession: AsyncSession = Depends(get_async_session),
-# ) -> ArmResponse | HTTPException:
-#     """
-#     Update the arm with the provided `arm_id` for the given `experiment_id` based on the `outcome`.
-#     """
-#     experiment = await get_mab_by_id(experiment_id, user_db.user_id, asession)
-#     if experiment is None:
-#         return HTTPException(
-#             status_code=404, detail=f"Experiment with id {experiment_id} not found"
-#         )
+@router.put("/{experiment_id}/{arm_id}/{outcome}", response_model=ContextualArmResponse)
+async def update_arm(
+    experiment_id: int,
+    arm_id: int,
+    context: list[int],
+    outcome: Outcome,
+    user_db: UserDB = Depends(authenticate_key),
+    asession: AsyncSession = Depends(get_async_session),
+) -> ContextualArmResponse | HTTPException:
+    """
+    Update the arm with the provided `arm_id` for the given `experiment_id` based on the `outcome`.
+    """
+    experiment = await get_contextual_mab_by_id(
+        experiment_id, user_db.user_id, asession
+    )
+    if experiment is None:
+        return HTTPException(
+            status_code=404, detail=f"Experiment with id {experiment_id} not found"
+        )
 
-#     arms = [a for a in experiment.arms if a.arm_id == arm_id]
-#     if not arms:
-#         return HTTPException(status_code=404, detail=f"Arm with id {arm_id} not found")
-#     else:
-#         arm = arms[0]
+    arms = [a for a in experiment.arms if a.arm_id == arm_id]
+    if not arms:
+        return HTTPException(status_code=404, detail=f"Arm with id {arm_id} not found")
+    else:
+        arm = arms[0]
 
-#     if outcome == Outcome.SUCCESS:
-#         arm.successes += 1
-#     else:
-#         arm.failures += 1
+    # Get coordinates for indexing successes and failures for the arms
+    coordinates = [c.values.argwhere(v) for c, v in zip(experiment.contexts, context)]
 
-#     await asession.commit()
+    if outcome == Outcome.SUCCESS:
+        arm.successes[coordinates] += 1
+    else:
+        arm.failures[coordinates] += 1
 
-#     return ArmResponse.model_validate(arm)
+    await asession.commit()
+
+    return ContextualArmResponse.model_validate(arm)

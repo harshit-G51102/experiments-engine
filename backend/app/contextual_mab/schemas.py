@@ -1,4 +1,4 @@
-from typing import List
+import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 from ..mab.schemas import MultiArmedBandit, MultiArmedBanditResponse
 
@@ -59,13 +59,13 @@ class ContextualArm(BaseModel):
         description="The beta parameter of the beta distribution.",
         examples=[1, 10, 100],
     )
-    successes: List[int] = Field(
+    successes: np.ndarray = Field(
         description="List of successes corresponding to each context combo.",
-        examples=[[0, 0, 0]],
+        examples=[np.zeros((2, 3))],
     )
-    failures: List[int] = Field(
+    failures: np.ndarray = Field(
         description="List of failures corresponding to each context combo.",
-        examples=[[0, 0, 0]],
+        examples=[np.zeros((2, 3))],
     )
     model_config = ConfigDict(from_attributes=True)
 

@@ -1,12 +1,43 @@
 from typing import Sequence
 
 from sqlalchemy import Boolean, ForeignKey, Integer, Float, String, select, delete
-from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.types import TypeDecorator, LargeBinary
+from sqlalchemy.engine import Dialect
 from ..models import Base
 from .schemas import ContextualBandit
+
+import numpy as np
+import io
+
+
+# Create custom type to sve numpy arrays as binary
+class NumpyArrayBinary(TypeDecorator):
+    """
+    Custom type to save numpy arrays as binary.
+    """
+
+    impl = LargeBinary
+
+    def process_bind_param(self, value: np.ndarray, dialect: Dialect) -> bytes | None:
+        """
+        Convert numpy array to binary before saving to the database.
+        """
+        if value is not None:
+            out = io.BytesIO()
+            np.save(out, value)  # Save array to binary
+            return out.getvalue()
+        return value
+
+    def process_result_value(self, value: bytes, dialect: Dialect) -> np.ndarray | None:
+        """
+        Convert binary to numpy array after fetching from the database.
+        """
+        if value is not None:
+            return np.load(io.BytesIO(value))  # Load array from binary
+        return value
 
 
 class ContextualBanditDB(Base):
@@ -61,8 +92,8 @@ class ContextualArmDB(Base):
     alpha_prior: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     beta_prior: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
-    successes: Mapped[list[int]] = mapped_column(ARRAY(Integer), nullable=False)
-    failures: Mapped[list[int]] = mapped_column(ARRAY(Integer), nullable=False)
+    successes: Mapped[np.ndarray] = mapped_column(NumpyArrayBinary, nullable=False)
+    failures: Mapped[np.ndarray] = mapped_column(NumpyArrayBinary, nullable=False)
 
     experiment: Mapped[ContextualBanditDB] = relationship(
         "ContextualBanditDB", back_populates="arms", lazy="joined"
