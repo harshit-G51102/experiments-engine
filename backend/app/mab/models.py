@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, select
+from sqlalchemy import Boolean, ForeignKey, Integer, String, select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -113,3 +113,23 @@ async def get_mab_by_id(
     )
 
     return result.unique().scalar_one_or_none()
+
+
+async def delete_mab_by_id(
+    experiment_id: int, user_id: int, asession: AsyncSession
+) -> None:
+    """
+    Delete the experiment by id.
+    """
+    await asession.execute(
+        delete(ArmDB)
+        .where(ArmDB.user_id == user_id)
+        .where(ArmDB.experiment_id == experiment_id)
+    )
+    await asession.execute(
+        delete(MultiArmedBanditDB)
+        .where(MultiArmedBanditDB.user_id == user_id)
+        .where(MultiArmedBanditDB.experiment_id == experiment_id)
+    )
+    await asession.commit()
+    return None

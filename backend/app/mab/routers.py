@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..auth.dependencies import authenticate_key, get_current_user
 from ..database import get_async_session
 from ..users.models import UserDB
-from .models import get_all_mabs, get_mab_by_id, save_mab_to_db
+from .models import get_all_mabs, get_mab_by_id, save_mab_to_db, delete_mab_by_id
 from .schemas import Arm, ArmResponse, MultiArmedBandit, MultiArmedBanditResponse
 from ..schemas import Outcome
 from ..exp_engine_utils.sampling import ts_beta_binomial
@@ -59,6 +59,27 @@ async def get_mab(
         )
 
     return MultiArmedBanditResponse.model_validate(experiment)
+
+
+@router.delete("/{experiment_id}", response_model=dict)
+async def delete_mab(
+    experiment_id: int,
+    user_db: Annotated[UserDB, Depends(get_current_user)],
+    asession: AsyncSession = Depends(get_async_session),
+) -> dict:
+    """
+    Delete the experiment with the provided `experiment_id`.
+    """
+    try:
+        experiment = await get_mab_by_id(experiment_id, user_db.user_id, asession)
+        if experiment is None:
+            return HTTPException(
+                status_code=404, detail=f"Experiment with id {experiment_id} not found"
+            )
+        await delete_mab_by_id(experiment_id, user_db.user_id, asession)
+        return {"message": f"Experiment with id {experiment_id} deleted successfully."}
+    except Exception as e:
+        return HTTPException(status_code=500, detail=f"Error: {e}")
 
 
 @router.get("/{experiment_id}/draw", response_model=Arm)
