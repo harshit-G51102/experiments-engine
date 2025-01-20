@@ -88,6 +88,13 @@ async def delete_contextual_mab(
     Delete the experiment with the provided `experiment_id`.
     """
     try:
+        experiment = await get_contextual_mab_by_id(
+            experiment_id, user_db.user_id, asession
+        )
+        if experiment is None:
+            return HTTPException(
+                status_code=404, detail=f"Experiment with id {experiment_id} not found"
+            )
         await delete_contextual_mab_by_id(experiment_id, user_db.user_id, asession)
         return {"detail": f"Experiment {experiment_id} deleted successfully."}
     except Exception as e:
