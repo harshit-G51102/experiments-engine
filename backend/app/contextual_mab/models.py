@@ -92,8 +92,8 @@ class ContextualArmDB(Base):
     alpha_prior: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     beta_prior: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
-    successes: Mapped[np.ndarray] = mapped_column(NumpyArrayBinary, nullable=False)
-    failures: Mapped[np.ndarray] = mapped_column(NumpyArrayBinary, nullable=False)
+    successes: Mapped[list] = mapped_column(ARRAY(Integer), nullable=False)
+    failures: Mapped[list] = mapped_column(ARRAY(Integer), nullable=False)
 
     experiment: Mapped[ContextualBanditDB] = relationship(
         "ContextualBanditDB", back_populates="arms", lazy="joined"

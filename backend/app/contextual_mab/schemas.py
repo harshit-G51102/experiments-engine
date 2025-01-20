@@ -1,4 +1,5 @@
 import numpy as np
+from typing import List
 from pydantic import BaseModel, ConfigDict, Field
 from ..mab.schemas import MultiArmedBandit, MultiArmedBanditResponse
 
@@ -16,7 +17,7 @@ class Context(BaseModel):
         description="Description of the context",
         examples=["This is a description of the context."],
     )
-    values: list[int] = Field(
+    values: List[int] = Field(
         description="List of values the context can", examples=[[0, 1]], default=[0, 1]
     )
     weight: float = Field(
@@ -59,13 +60,13 @@ class ContextualArm(BaseModel):
         description="The beta parameter of the beta distribution.",
         examples=[1, 10, 100],
     )
-    successes: np.ndarray = Field(
+    successes: list = Field(
         description="List of successes corresponding to each context combo.",
-        examples=[np.zeros((2, 3))],
+        examples=[np.zeros((2, 3)).tolist()],
     )
-    failures: np.ndarray = Field(
+    failures: list = Field(
         description="List of failures corresponding to each context combo.",
-        examples=[np.zeros((2, 3))],
+        examples=[np.zeros((2, 3)).tolist()],
     )
     model_config = ConfigDict(from_attributes=True)
 

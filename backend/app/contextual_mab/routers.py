@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,6 +18,7 @@ from .schemas import (
     ContextualBandit,
     ContextualBanditResponse,
 )
+from .dependencies import check_experiment_inputs
 import numpy as np
 from ..exp_engine_utils.sampling import ts_beta_binomial
 from ..schemas import Outcome
@@ -35,14 +36,8 @@ async def create_contextual_mabs(
     """
     Create a new contextual experiment with different priors for each context.
     """
-    if (experiment.arms[0].successes.shape != experiment.arms[0].failures.shape) or (
-        experiment.arms[0].successes.size
-        == np.prod([len(c.values) for c in experiment.contexts])
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Successes and failures are wrong shape.",
-        )
+    # Check if inputs are correct
+    check_experiment_inputs(experiment)
 
     response = await save_contextual_mab_to_db(experiment, user_db.user_id, asession)
     return ContextualBanditResponse.model_validate(response)
@@ -102,7 +97,7 @@ async def delete_contextual_mab(
 @router.get("/{experiment_id}/draw", response_model=ContextualArmResponse)
 async def get_arm(
     experiment_id: int,
-    context: list[int],
+    context: list[int] = Query(..., description="List of context values"),
     user_db: UserDB = Depends(authenticate_key),
     asession: AsyncSession = Depends(get_async_session),
 ) -> ContextualArmResponse | HTTPException:
@@ -116,14 +111,24 @@ async def get_arm(
         return HTTPException(
             status_code=404, detail=f"Experiment with id {experiment_id} not found"
         )
+    if len(experiment.contexts) != len(context):
+        return HTTPException(
+            status_code=400,
+            detail="Number of contexts provided does not match the number of contexts in the experiment.",
+        )
 
     # Get coordinates for indexing successes and failures for the arms
-    coordinates = [c.values.argwhere(v) for c, v in zip(experiment.contexts, context)]
+    coordinates = tuple(
+        [
+            int(np.argwhere(np.array(c.values) == v).flatten()[0])
+            for c, v in zip(experiment.contexts, context)
+        ]
+    )
 
     alphas = [arm.alpha_prior for arm in experiment.arms]
     betas = [arm.beta_prior for arm in experiment.arms]
-    successes = [arm.successes[coordinates] for arm in experiment.arms]
-    failures = [arm.failures[coordinates] for arm in experiment.arms]
+    successes = [np.array(arm.successes)[coordinates] for arm in experiment.arms]
+    failures = [np.array(arm.failures)[coordinates] for arm in experiment.arms]
 
     chosen_arm = ts_beta_binomial(alphas, betas, successes, failures)
 
@@ -149,6 +154,11 @@ async def update_arm(
         return HTTPException(
             status_code=404, detail=f"Experiment with id {experiment_id} not found"
         )
+    if len(experiment.contexts) != len(context):
+        return HTTPException(
+            status_code=400,
+            detail="Number of contexts provided does not match the number of contexts in the experiment.",
+        )
 
     arms = [a for a in experiment.arms if a.arm_id == arm_id]
     if not arms:
@@ -157,12 +167,21 @@ async def update_arm(
         arm = arms[0]
 
     # Get coordinates for indexing successes and failures for the arms
-    coordinates = [c.values.argwhere(v) for c, v in zip(experiment.contexts, context)]
+    coordinates = tuple(
+        [
+            int(np.argwhere(np.array(c.values) == v).flatten()[0])
+            for c, v in zip(experiment.contexts, context)
+        ]
+    )
 
     if outcome == Outcome.SUCCESS:
-        arm.successes[coordinates] += 1
+        successes = np.array(arm.successes.copy())
+        successes[coordinates] += 1
+        arm.successes = successes.tolist()
     else:
-        arm.failures[coordinates] += 1
+        failures = np.array(arm.failures.copy())
+        failures[coordinates] += 1
+        arm.failures = failures.tolist()
 
     await asession.commit()
 
