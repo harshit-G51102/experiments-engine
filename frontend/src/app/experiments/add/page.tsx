@@ -10,16 +10,17 @@ import { Input } from "@/components/catalyst/input";
 import { Divider } from "@/components/catalyst/divider";
 import { Textarea } from "@/components/catalyst/textarea";
 import { Radio, RadioField, RadioGroup } from "@/components/catalyst/radio";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/catalyst/button";
 import { PlusIcon } from "@heroicons/react/16/solid";
 import { DividerWithTitle } from "@/components/Dividers";
 import { Heading } from "@/components/catalyst/heading";
-import { NewArm, NewMAB } from "../types";
+import { Arm, NewArm, NewMAB } from "../types";
 import { createMABExperiment } from "../api";
 import { a } from "framer-motion/client";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/utils/auth";
+import { SpaceBetweenHorizontallyIcon, TrashIcon } from "@radix-ui/react-icons";
 
 const defaultArm: NewArm = {
   name: "",
@@ -57,6 +58,18 @@ export default function NewExperiment() {
         console.error(error);
       });
   };
+
+  const handleDeleteArm = async (arm: NewArm) => {
+    console.log("Deleting arm", arm);
+    const index = arms.indexOf(arm);
+    console.log("Index", index);
+    const newArms = arms.splice(index, 1);
+    console.log("New arms", newArms);
+    setArms([...newArms]);
+    console.log("Arms", arms);
+  }
+
+
 
   return (
     <>
@@ -98,6 +111,13 @@ export default function NewExperiment() {
               </Description>
             </RadioField>
             <RadioField>
+              <Radio id="contextual-mab" value="CMAB" disabled />
+              <Label htmlFor="contextual-mab"> Contextual Bandit</Label>
+              <Description>
+                A method that automatically converges to the best performing arms conditional on context.
+              </Description>
+            </RadioField>
+            <RadioField>
               <Radio id="ab-test" value="AB" disabled />
               <Label htmlFor="ab-test">[Coming soon] A/B Testing</Label>
               <Description>
@@ -113,7 +133,8 @@ export default function NewExperiment() {
             <PlusIcon className="w-4 h-4 mr-2" />
             Add Arm
           </Button>
-          {arms.map((arm, index) => (
+          {
+          arms.map((arm, index) => (
             <div key={index}>
               <DividerWithTitle title={`Arm ${index + 1}`} />
               <FieldGroup
@@ -180,6 +201,18 @@ export default function NewExperiment() {
                       }}
                     />
                   </Field>
+
+                  <Field className="flex flex-row justify-end mt-12">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        handleDeleteArm(arm);
+                      }}
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </Button>
+                  </Field>
+
                 </div>
               </FieldGroup>
             </div>
