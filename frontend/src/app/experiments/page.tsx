@@ -12,6 +12,7 @@ import { useAuth } from "@/utils/auth";
 export default function Experiments() {
   const [experiments, setExperiments] = React.useState<MAB[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [isHovered, setIsHovered] = React.useState(false);
 
   const { token } = useAuth();
 
@@ -21,7 +22,18 @@ export default function Experiments() {
       setExperiments(data);
     });
     setLoading(false);
-  }, [token]);
+  }, [experiments, token]);
+
+
+  if (!token) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="bg-white dark:bg-zinc-950 rounded-lg p-6 sm:p-8 md:p-10 flex flex-col items-center justify-center space-y-4 w-full max-w-sm mx-auto">
+          <span className="text-primary font-medium text-center">Authentication error</span>
+        </div>
+      </div>
+    );
+  }
 
   return loading ? (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
@@ -32,7 +44,7 @@ export default function Experiments() {
     </div>
   ) : experiments.length > 0 ? (
     <div className="min-h-screen ">
-      <ExperimentCardGrid experiments={experiments} />
+      <ExperimentCardGrid experiments={experiments} token={token} />
       <Link href="/experiments/add">
         <FloatingAddButton />
       </Link>
@@ -51,7 +63,7 @@ export default function Experiments() {
   );
 }
 
-const ExperimentCardGrid = ({ experiments }: { experiments: MAB[] }) => {
+const ExperimentCardGrid = ({ experiments, token }: { experiments: MAB[], token: string}) => {
   return (
     <ul
       role="list"
@@ -59,7 +71,7 @@ const ExperimentCardGrid = ({ experiments }: { experiments: MAB[] }) => {
     >
       {experiments.map((experiment) => (
         <li key={experiment.experiment_id}>
-          <ExperimentCard experiment={experiment} />
+          <ExperimentCard experiment={experiment} token={token} />
         </li>
       ))}
     </ul>

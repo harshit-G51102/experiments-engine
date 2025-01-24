@@ -1,5 +1,5 @@
 import api from "@/utils/api";
-import { NewMAB } from "./types";
+import { NewMAB, MAB } from "./types";
 
 const createMABExperiment = async ({
   mab,
@@ -33,4 +33,24 @@ const getAllMABExperiments = async (token: string | null) => {
   }
 };
 
-export { createMABExperiment, getAllMABExperiments };
+const deleteMABExperiment = async ({
+  mab,
+  token
+} : {
+  mab: MAB;
+  token: string | null;
+}) => {
+  console.log(mab.experiment_id);
+  try {
+    const response = await api.delete(`/mab/${mab.experiment_id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(`Error deleting experiment: ${error.message}`);
+}
+};
+
+export { createMABExperiment, getAllMABExperiments, deleteMABExperiment };

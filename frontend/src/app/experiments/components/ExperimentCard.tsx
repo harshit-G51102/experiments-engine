@@ -9,10 +9,16 @@ import { MAB, BetaParams } from "../types";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BetaLineChart } from "./Charts";
+import { TrashIcon } from "@heroicons/react/20/solid";
+import { deleteMABExperiment } from "../api";
 
-export default function ExperimentCars({ experiment }: { experiment: MAB }) {
+
+export default function ExperimentCards({ experiment, token }: { experiment: MAB, token: string | null }) {
   const { experiment_id, name, is_active, arms } = { ...experiment };
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const maxValue =
     arms && arms.length > 0
       ? Math.max(...arms.map((d) => d.successes + d.failures))
@@ -31,6 +37,18 @@ export default function ExperimentCars({ experiment }: { experiment: MAB }) {
     alpha: arm.alpha_prior + arm.successes, // Posterior alpha = alpha_prior + successes
     beta: arm.beta_prior + arm.failures, // Posterior beta = beta_prior + failures
   }));
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteMABExperiment({ mab: experiment, token});
+      setIsDeleting(false);
+    } catch (error) {
+      console.error("Error deleting experiment:", error);
+      setIsDeleting(false);
+    }
+  }
+
   return (
     <div className="flex items-center justify-center">
       <AnimatePresence>
@@ -69,6 +87,8 @@ export default function ExperimentCars({ experiment }: { experiment: MAB }) {
             e.nativeEvent.stopImmediatePropagation();
             isExpanded ? null : toggleExpand();
           }}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
         >
           <CardHeader className="flex flex-row items-start align-top justify-between space-y-0 pb-2">
             <div className="flex flex-col space-y-1">
@@ -86,6 +106,18 @@ export default function ExperimentCars({ experiment }: { experiment: MAB }) {
               <span className="text-sm font-medium">
                 {is_active ? "Active" : "Not Active"}
               </span>
+              {isHovered && (
+                <button
+                className="ml-4"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.nativeEvent.stopImmediatePropagation();
+                  handleDelete();
+                }}
+                >
+                  <TrashIcon className="h-5 w-5" />
+                </button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="flex flex-col flex-between">

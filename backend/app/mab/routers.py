@@ -66,7 +66,7 @@ async def delete_mab(
     experiment_id: int,
     user_db: Annotated[UserDB, Depends(get_current_user)],
     asession: AsyncSession = Depends(get_async_session),
-) -> dict:
+) -> dict | HTTPException:
     """
     Delete the experiment with the provided `experiment_id`.
     """
