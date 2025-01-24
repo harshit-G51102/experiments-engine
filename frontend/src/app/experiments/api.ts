@@ -1,5 +1,5 @@
 import api from "@/utils/api";
-import { NewMAB, MAB } from "./types";
+import { NewMAB, MAB, NewCMAB, CMAB } from "./types";
 
 const createMABExperiment = async ({
   mab,
@@ -40,7 +40,6 @@ const deleteMABExperiment = async ({
   mab: MAB;
   token: string | null;
 }) => {
-  console.log(mab.experiment_id);
   try {
     const response = await api.delete(`/mab/${mab.experiment_id}`, {
       headers: {
@@ -53,4 +52,57 @@ const deleteMABExperiment = async ({
 }
 };
 
-export { createMABExperiment, getAllMABExperiments, deleteMABExperiment };
+const createCMABExperiment = async ({
+  mab,
+  token,
+}: {
+  mab: NewCMAB;
+  token: string | null;
+}) => {
+  try {
+    const response = await api.post("/contextual_mab/", mab, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(`Error creating new experiment: ${error.message}`);
+  }
+};
+
+const getAllCMABExperiments = async (token: string | null) => {
+  try {
+    const response = await api.get("/contextual_mab/", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(`Error fetching all experiments: ${error.message}`);
+  }
+};
+
+const deleteCMABExperiment = async ({
+  mab,
+  token
+} : {
+  mab: CMAB;
+  token: string | null;
+}) => {
+  try {
+    const response = await api.delete(`/contextual_mab/${mab.experiment_id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(`Error deleting experiment: ${error.message}`);
+}
+}
+
+export {
+  createMABExperiment, getAllMABExperiments, deleteMABExperiment,
+  createCMABExperiment, getAllCMABExperiments, deleteCMABExperiment};

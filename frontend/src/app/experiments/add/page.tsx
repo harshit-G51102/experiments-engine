@@ -15,8 +15,8 @@ import { Button } from "@/components/catalyst/button";
 import { PlusIcon } from "@heroicons/react/16/solid";
 import { DividerWithTitle } from "@/components/Dividers";
 import { Heading } from "@/components/catalyst/heading";
-import { Arm, NewArm, NewMAB } from "../types";
-import { createMABExperiment } from "../api";
+import { Arm, Context, NewContext, NewArm, NewMAB, NewCMAB } from "../types";
+import { createMABExperiment, createCMABExperiment } from "../api";
 import { a } from "framer-motion/client";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/utils/auth";
@@ -27,6 +27,14 @@ const defaultArm: NewArm = {
   description: "",
   alpha_prior: 1,
   beta_prior: 1,
+};
+
+const defaultContext: NewContext = {
+  name: "",
+  description: "",
+  context_type: "binary",
+  values: [0, 1],
+  weight: 1,
 };
 
 export default function NewExperiment() {
@@ -41,8 +49,13 @@ export default function NewExperiment() {
     { ...defaultArm },
     { ...defaultArm },
   ]);
+  const [contexts, setContexts] = useState<NewContext[]>([
+    {...defaultContext},
+    {...defaultContext},
+  ]);
 
   const onSubmit = () => {
+    if (methodType === "MAB") {
     const mab: NewMAB = {
       name: experimentName,
       description: experimentDescription,
@@ -57,16 +70,35 @@ export default function NewExperiment() {
       .catch((error) => {
         console.error(error);
       });
+    } else if (methodType === "CMAB"){
+      const mab: NewCMAB = {
+        name: experimentName,
+        description: experimentDescription,
+        arms: arms,
+        contexts: contexts,
+      };
+
+      createCMABExperiment({mab, token})
+        .then((response) => {
+          console.log(response);
+          router.push(`/experiments`);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    }
   };
 
   const handleDeleteArm = async (arm: NewArm) => {
-    console.log("Deleting arm", arm);
     const index = arms.indexOf(arm);
-    console.log("Index", index);
-    const newArms = arms.splice(index, 1);
-    console.log("New arms", newArms);
-    setArms([...newArms]);
-    console.log("Arms", arms);
+    arms.splice(index, 1);
+    setArms([...arms]);
+  }
+
+  const handleDeleteContext = async (context: NewContext) => {
+    const index = contexts.indexOf(context);
+    contexts.splice(index, 1);
+    setContexts([...contexts]);
   }
 
 
@@ -96,6 +128,7 @@ export default function NewExperiment() {
             </Field>
           </FieldGroup>
           <Divider className="mt-8" />
+          <Heading className="mb-2 text-sm">Experiment Type</Heading>
           <RadioGroup
             name="experiment-method"
             defaultValue="MAB"
@@ -111,7 +144,7 @@ export default function NewExperiment() {
               </Description>
             </RadioField>
             <RadioField>
-              <Radio id="contextual-mab" value="CMAB" disabled />
+              <Radio id="contextual-mab" value="CMAB" />
               <Label htmlFor="contextual-mab"> Contextual Bandit</Label>
               <Description>
                 A method that automatically converges to the best performing arms conditional on context.
@@ -125,7 +158,105 @@ export default function NewExperiment() {
               </Description>
             </RadioField>
           </RadioGroup>
+          { methodType === "CMAB"?
+            <div>
+            <Divider className="mt-8" />
+            <Heading className="mb-2 text-sm">Context</Heading>
+            <Button
+              className="mt-4"
+              onClick={() => setContexts([...contexts, { ...defaultContext }])}
+            >
+              <PlusIcon className="w-4 h-4 mr-2" />
+              Add Context
+            </Button>
+            {
+            contexts.map((context, index) => (
+              <div key={index}>
+              <DividerWithTitle title={`Context ${index + 1}`}/>
+              <FieldGroup
+                key={index}
+                className="md:flex md:flex-row md:space-x-8 md:space-y-0 items-start"
+              >
+                <div className="basis-1/2">
+                <Field className="flex flex-row ">
+                  <Label className="basis-1/4 mt-3">Name</Label>
+                  <Input
+                  className="basis-3/4"
+                  name={`context-${index + 1}`}
+                  placeholder="Give the context a searchable name"
+                  defaultValue={context.name}
+                  onChange={(e) => {
+                    const newContexts = [...contexts];
+                    newContexts[index].name = e.target.value;
+                    setContexts(newContexts);
+                  }}
+                  />
+                </Field>
+                <Field className="flex flex-row ">
+                  <Label className="basis-1/4 mt-3">Description</Label>
+                  <Textarea
+                  className="basis-3/4 "
+                  name={`context-${index + 1}-description`}
+                  placeholder="What is the context on which you want to condition the observed reward?"
+                  defaultValue={context.description}
+                  rows={3}
+                  onChange={(e) => {
+                    const newContexts = [...contexts];
+                    newContexts[index].description = e.target.value;
+                    setContexts(newContexts);
+                  }}
+                  />
+                </Field>
+                </div>
+                <div className="bases-1/2 grow">
+                <Field className="flex flex-row ">
+                  <Label className="basis-1/4 mt-3">Context values</Label>
+                  <Input
+                  className="basis-3/4"
+                  name={`context-${index + 1}-values`}
+                  placeholder="Enter a list of possible values for the context, separated by commas"
+                  defaultValue={context.values.join(", ")}
+                  onChange={(e) => {
+                    const newContexts = [...contexts];
+                    newContexts[index].values = e.target.value.split(",").map(value => parseInt(value.trim()));
+                    setContexts(newContexts);
+                  }}
+                  />
+                </Field>
+                <Field className="flex flex-row ">
+                  <Label className="basis-1/4 mt-3">Context weight</Label>
+                  <Input
+                  className="basis-3/4"
+                  name={`context-${index + 1}-weight`}
+                  placeholder="Enter a value between 0. and 1. for the weight of the context"
+                  defaultValue={context.weight}
+                  onChange={(e) => {
+                    const newContexts = [...contexts];
+                    newContexts[index].weight = parseInt(e.target.value);
+                    setContexts(newContexts);
+                  }}
+                  />
+                </Field>
+
+                <Field className="flex flex-row justify-end mt-12">
+                  <Button
+                  type="button"
+                  onClick={() => {
+                    handleDeleteContext(context);
+                  }}
+                  >
+                  <TrashIcon className="h-5 w-5" />
+                  </Button>
+                </Field>
+
+                </div>
+              </FieldGroup>
+              </div>
+            ))}
+            </div>
+            : null}
           <Divider className="mt-8" />
+          <Heading className="mb-2 text-sm">Arms</Heading>
           <Button
             className="mt-4"
             onClick={() => setArms([...arms, { ...defaultArm }])}
