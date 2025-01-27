@@ -84,7 +84,8 @@ class ContextDB(Base):
     )
     name: Mapped[str] = mapped_column(String(length=150), nullable=False)
     description: Mapped[str] = mapped_column(String(length=500), nullable=True)
-    values: Mapped[list[int]] = mapped_column(ARRAY(Integer), nullable=False)
+    context_type: Mapped[str] = mapped_column(String(length=150), nullable=False)
+    values: Mapped[list[int]] = mapped_column(ARRAY(Integer), nullable=True)
     weight: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
 
     experiment: Mapped[ContextualBanditDB] = relationship(

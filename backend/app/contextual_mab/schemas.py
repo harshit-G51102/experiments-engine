@@ -1,7 +1,18 @@
 import numpy as np
 from typing import List
 from pydantic import BaseModel, ConfigDict, Field
+from enum import Enum
 from ..mab.schemas import MultiArmedBandit, MultiArmedBanditResponse
+
+
+class ContextType(Enum):
+    """
+    Enum class for the type of context.
+    """
+
+    BINARY = "binary"
+    CATEGORICAL = "categorical"
+    CONTINUOUS = "continuous"
 
 
 class Context(BaseModel):
@@ -17,8 +28,12 @@ class Context(BaseModel):
         description="Description of the context",
         examples=["This is a description of the context."],
     )
+    context_type: str = Field(
+        examples=["binary", "categorical", "continuous"],
+        description="Type of context",
+    )
     values: List[int] = Field(
-        description="List of values the context can", examples=[[0, 1]], default=[0, 1]
+        description="List of values the context can", examples=[[0, 1]]
     )
     weight: float = Field(
         description="Weight associated with outcome for this context",
