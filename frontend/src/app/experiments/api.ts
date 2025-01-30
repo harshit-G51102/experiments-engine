@@ -59,6 +59,7 @@ const createCMABExperiment = async ({
   mab: NewCMAB;
   token: string | null;
 }) => {
+  console.log(mab);
   try {
     const response = await api.post("/contextual_mab/", mab, {
       headers: {
@@ -67,6 +68,7 @@ const createCMABExperiment = async ({
     });
     return response.data;
   } catch (error: any) {
+    console.log(error);
     throw new Error(`Error creating new experiment: ${error.message}`);
   }
 };

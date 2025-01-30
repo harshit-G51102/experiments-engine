@@ -1,7 +1,7 @@
 interface NewContext {
   name: string;
   description: string;
-  context_type: string;
+  context_type: string|null;
   values: number[];
   weight: number;
 

@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 from enum import Enum
 from ..mab.schemas import MultiArmedBandit, MultiArmedBanditResponse
@@ -53,9 +53,9 @@ class ContextResponse(Context):
     model_config = ConfigDict(from_attributes=True)
 
 
-class ContextualArm(BaseModel):
+class ContextualArmInput(BaseModel):
     """
-    Pydantic model for a contextual arm of the experiment.
+    Pydantic model for input to update an arm.
     """
 
     name: str = Field(
@@ -75,11 +75,20 @@ class ContextualArm(BaseModel):
         description="The beta parameter of the beta distribution.",
         examples=[1, 10, 100],
     )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ContextualArm(ContextualArmInput):
+    """
+    Pydantic model for a contextual arm of the experiment.
+    """
+
     successes: list = Field(
         description="List of successes corresponding to each context combo.",
         examples=[np.zeros((2, 3)).tolist()],
     )
-    failures: list = Field(
+    failures: Optional[list] = Field(
         description="List of failures corresponding to each context combo.",
         examples=[np.zeros((2, 3)).tolist()],
     )
@@ -92,6 +101,17 @@ class ContextualArmResponse(ContextualArm):
     """
 
     arm_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ContextualBanditInput(MultiArmedBandit):
+    """
+    Pydantic model for a contextual experiment.
+    """
+
+    arms: list[ContextualArmInput]
+    contexts: list[Context]
+
     model_config = ConfigDict(from_attributes=True)
 
 

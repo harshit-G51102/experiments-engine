@@ -14,7 +14,9 @@ from .models import (
     delete_contextual_mab_by_id,
 )
 from .schemas import (
+    ContextualArm,
     ContextualArmResponse,
+    ContextualBanditInput,
     ContextualBandit,
     ContextualBanditResponse,
 )
@@ -29,17 +31,38 @@ router = APIRouter(prefix="/contextual_mab", tags=["Contextual Bandits"])
 
 @router.post("/", response_model=ContextualBanditResponse)
 async def create_contextual_mabs(
-    experiment: ContextualBandit,
+    experiment: ContextualBanditInput,
     user_db: Annotated[UserDB, Depends(get_current_user)],
     asession: AsyncSession = Depends(get_async_session),
 ) -> ContextualBanditResponse | HTTPException:
     """
     Create a new contextual experiment with different priors for each context.
     """
-    # Check if inputs are correct
-    check_experiment_inputs(experiment)
+    new_arms = []
+    for arm in experiment.arms:
+        successes = np.zeros(
+            tuple(len(context.values) for context in experiment.contexts)
+        ).tolist()
+        failures = np.zeros(
+            tuple(len(context.values) for context in experiment.contexts)
+        ).tolist()
+        new_arms.append(
+            ContextualArm(successes=successes, failures=failures, **arm.model_dump())
+        )
+    new_experiment = ContextualBandit(
+        name=experiment.name,
+        description=experiment.description,
+        arms=new_arms,
+        contexts=experiment.contexts,
+        is_active=experiment.is_active,
+    )
 
-    response = await save_contextual_mab_to_db(experiment, user_db.user_id, asession)
+    # Check if inputs are correct
+    check_experiment_inputs(new_experiment)
+
+    response = await save_contextual_mab_to_db(
+        new_experiment, user_db.user_id, asession
+    )
     return ContextualBanditResponse.model_validate(response)
 
 

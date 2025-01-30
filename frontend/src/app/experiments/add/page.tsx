@@ -20,7 +20,16 @@ import { createMABExperiment, createCMABExperiment } from "../api";
 import { a } from "framer-motion/client";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/utils/auth";
-import { SpaceBetweenHorizontallyIcon, TrashIcon } from "@radix-ui/react-icons";
+import { TrashIcon } from "@radix-ui/react-icons";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
+import { ChevronDownIcon } from "@heroicons/react/16/solid";
+
+
+enum ContextType {
+  BINARY = "binary",
+  CATEGORICAL = "categorical",
+  // CONTINUOUS = "continuous"
+}
 
 const defaultArm: NewArm = {
   name: "",
@@ -32,8 +41,8 @@ const defaultArm: NewArm = {
 const defaultContext: NewContext = {
   name: "",
   description: "",
-  context_type: "binary",
-  values: [0, 1],
+  context_type: null,
+  values: [],
   weight: 1,
 };
 
@@ -209,6 +218,33 @@ export default function NewExperiment() {
                 </Field>
                 </div>
                 <div className="bases-1/2 grow">
+                <Field className="flex flex-row">
+                  <Label className="basis-1/4 mt-3">Context type</Label>
+                  <Menu as="div" className="relative">
+                    <MenuButton className={`flex items-center justify-center px-3 py-3 text-sm font-small bg-zinc-800 rounded-md border border-zinc-600 ${context.context_type?'text-white': 'text-zinc-500'}`}>
+                      {context.context_type?context.context_type:"Select a context type"}
+                      <ChevronDownIcon className="h-5 w-5" />
+                    </MenuButton>
+                    <MenuItems className="absolute left-0 top-full mt-1 bg-opacity-100 rounded-md border border-zinc-600 w-full">
+                      {Object.values(ContextType).map((type) => (
+                      <MenuItem key={type} as="div">
+                        {({ focus }) => (
+                        <button
+                          className={`w-full text-left text-sm text-white px-3 py-2 ${focus ? 'bg-zinc-600' : 'bg-zinc'}`}
+                          onClick={() => {
+                          const newContexts = [...contexts];
+                          newContexts[index].context_type = type;
+                          setContexts(newContexts);
+                          }}
+                        >
+                          {type}
+                        </button>
+                        )}
+                      </MenuItem>
+                      ))}
+                    </MenuItems>
+                  </Menu>
+                </Field>
                 <Field className="flex flex-row ">
                   <Label className="basis-1/4 mt-3">Context values</Label>
                   <Input
