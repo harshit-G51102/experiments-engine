@@ -1,6 +1,15 @@
 from typing import Sequence
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, select, delete
+from sqlalchemy import (
+    ARRAY,
+    Boolean,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    delete,
+    select,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,9 +30,12 @@ class MultiArmedBanditDB(Base):
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.user_id"), nullable=False
     )
+
     name: Mapped[str] = mapped_column(String(length=150), nullable=False)
     description: Mapped[str] = mapped_column(String(length=500), nullable=True)
+    reward_type: Mapped[str] = mapped_column(String(length=50), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
     arms: Mapped[list["ArmDB"]] = relationship(
         "ArmDB", back_populates="experiment", lazy="joined"
     )
@@ -43,14 +55,22 @@ class ArmDB(Base):
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.user_id"), nullable=False
     )
+
     name: Mapped[str] = mapped_column(String(length=150), nullable=False)
     description: Mapped[str] = mapped_column(String(length=500), nullable=True)
 
-    alpha_prior: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    beta_prior: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    # prior variables
+    prior_type: Mapped[str] = mapped_column(String(length=50), nullable=False)
+    alpha: Mapped[float] = mapped_column(Float, nullable=True)
+    beta: Mapped[float] = mapped_column(Float, nullable=True)
+    mu: Mapped[float] = mapped_column(Float, nullable=True)
+    sigma: Mapped[float] = mapped_column(Float, nullable=True)
 
-    successes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    failures: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # reward variables
+    reward_type: Mapped[str] = mapped_column(String(length=50), nullable=False)
+    successes: Mapped[int] = mapped_column(Integer, nullable=True)
+    failures: Mapped[int] = mapped_column(Integer, nullable=True)
+    reward: Mapped[list[float]] = mapped_column(ARRAY(Float), nullable=True)
 
     experiment: Mapped[MultiArmedBanditDB] = relationship(
         "MultiArmedBanditDB", back_populates="arms", lazy="joined"
@@ -65,13 +85,26 @@ async def save_mab_to_db(
     """
     Save the experiment to the database.
     """
-    arms = [ArmDB(**arm.model_dump(), user_id=user_id) for arm in experiment.arms]
+    arms = []
+    for arm in experiment.arms:
+        arm_data = arm.model_dump()
+        arm_data["prior_type"] = arm_data["prior_type"].value
+        arm_data["reward_type"] = arm_data["reward_type"].value
+
+        arms.append(
+            ArmDB(
+                **arm_data,
+                user_id=user_id,
+            )
+        )
+
     experiment_db = MultiArmedBanditDB(
         name=experiment.name,
         description=experiment.description,
         user_id=user_id,
         is_active=experiment.is_active,
         arms=arms,
+        reward_type=experiment.reward_type.value,
     )
 
     asession.add(experiment_db)

@@ -1,69 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing_extensions import Self
 
 from ..schemas import ArmPriors, RewardLikelihood
-
-
-class ArmPriorParams(BaseModel):
-    """
-    Pydantic model for arm prior parameters.
-    """
-
-    prior_type: ArmPriors = ArmPriors.BETA
-    alpha: float | None = None
-    beta: float | None = None
-    mu: float | None = None
-    sigma: float | None = None
-
-    @model_validator(mode="before")
-    def check_prior_params(cls: BaseModel, values: dict) -> dict:
-        """
-        Check if the prior parameters are provided correctly.
-        """
-        prior_type = values.get("prior_type")
-        error_message = "{prior_type} prior requires {params} parameters."
-        if (prior_type == ArmPriors.BETA) and (
-            values.get("alpha") is None or values.get("beta") is None
-        ):
-            error_message.format(prior_type=prior_type, params="alpha and beta")
-            raise ValueError(error_message)
-        elif (prior_type == ArmPriors.NORMAL) and (
-            values.get("mu") is None or values.get("sigma") is None
-        ):
-            error_message.format(prior_type=prior_type, params="mu and sigma")
-            raise ValueError(error_message)
-        return values
-
-
-class RewardLikelihoodParams(BaseModel):
-    """
-    Pydantic model for reward likelihood parameters.
-    """
-
-    reward_type: RewardLikelihood
-    successes: int | None = None
-    failures: int | None = None
-    reward: list[float] | None = None
-
-    @model_validator(mode="before")
-    def check_reward_params(cls: BaseModel, values: dict) -> dict:
-        """
-        Check if the reward likelihood parameters are provided correctly.
-        """
-        reward_type = values.get("reward_type")
-        error_message = "{reward_type} likelihood requires {params} parameters."
-        if (reward_type == RewardLikelihood.BERNOULLI) and (
-            values.get("successes") is None or values.get("failures") is None
-        ):
-            error_message.format(
-                reward_type=reward_type, params="successes and failures"
-            )
-            raise ValueError(error_message)
-        elif (reward_type == RewardLikelihood.NORMAL) and (
-            values.get("reward") is None
-        ):
-            error_message.format(reward_type=reward_type, params="reward")
-            raise ValueError(error_message)
-        return values
 
 
 class Arm(BaseModel):
@@ -80,19 +18,61 @@ class Arm(BaseModel):
         examples=["This is a description of the arm."],
     )
 
-    prior: ArmPriorParams = Field(
-        description="The prior distribution of the arm.",
-        default_factory=lambda: ArmPriorParams(
-            prior_type=ArmPriors.BETA, alpha=1.0, beta=1.0
-        ),
-    )
+    # prior variables
+    prior_type: ArmPriors = ArmPriors.BETA
+    alpha: float | None = None
+    beta: float | None = None
+    mu: float | None = None
+    sigma: float | None = None
 
-    reward: RewardLikelihoodParams = Field(
-        description="The type of observed reward, and corresponding paramters.",
-        default_factory=lambda: RewardLikelihoodParams(
-            reward_type=RewardLikelihood.BERNOULLI, successes=0, failures=0
-        ),
-    )
+    # reward likelihood
+    reward_type: RewardLikelihood = RewardLikelihood.BERNOULLI
+    successes: int | None = None
+    failures: int | None = None
+    reward: list[float] | None = None
+
+    @model_validator(mode="after")
+    def check_params(self) -> Self:
+        """
+        Check the parameters are provided correctly.
+        """
+        prior_type = self.prior_type
+        reward_type = self.reward_type
+
+        prior_params = {
+            ArmPriors.BETA: ("alpha", "beta"),
+            ArmPriors.NORMAL: ("mu", "sigma"),
+        }
+
+        reward_params = {
+            RewardLikelihood.BERNOULLI: ("successes", "failures"),
+            RewardLikelihood.NORMAL: ("reward",),
+        }
+
+        if prior_type in prior_params:
+            missing_params = [
+                param
+                for param in prior_params[prior_type]
+                if getattr(self, param) is None
+            ]
+            if missing_params:
+                raise ValueError(
+                    f"{prior_type.value} prior requires {', '.join(missing_params)}."
+                )
+
+        if reward_type in reward_params:
+            missing_params = [
+                param
+                for param in reward_params[reward_type]
+                if getattr(self, param) is None
+            ]
+            if missing_params:
+                raise ValueError(
+                    f"{reward_type.value} llhood requires {', '.join(missing_params)}."
+                )
+
+        return self
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -140,9 +120,7 @@ class MultiArmedBandit(MultiArmedBanditBase):
     arms: list[Arm]
 
     @model_validator(mode="before")
-    def check_arm_and_experiment_reward_type(
-        cls: MultiArmedBanditBase, values: dict
-    ) -> dict:
+    def check_arm_and_experiment_reward_type(cls, values: dict) -> dict:
         """
         Check if the arm reward type is same as the experiment reward type.
         """
@@ -150,7 +128,7 @@ class MultiArmedBandit(MultiArmedBanditBase):
         arms = values.get("arms")
         if arms is None:
             raise ValueError("At least one arm is required.")
-        if any(arm["reward"]["reward_type"] != reward_type for arm in arms):
+        if any(arm["reward_type"] != reward_type for arm in arms):
             raise ValueError(
                 "All arms' reward type must be same as experiment reward type."
             )

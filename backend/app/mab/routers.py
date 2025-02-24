@@ -25,6 +25,7 @@ async def create_mab(
     Create a new experiment.
     """
     response = await save_mab_to_db(experiment, user_db.user_id, asession)
+    # return response
     return MultiArmedBanditResponse.model_validate(response)
 
 
