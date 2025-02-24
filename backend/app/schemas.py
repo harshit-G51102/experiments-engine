@@ -10,3 +10,21 @@ class Outcome(str, Enum):
 
     SUCCESS = "success"
     FAILURE = "failure"
+
+
+class ArmPriors(Enum):
+    """
+    Enum for the prior distribution of the arm.
+    """
+
+    BETA = "beta"
+    NORMAL = "normal"
+
+
+class RewardLikelihood(Enum):
+    """
+    Enum for the likelihood distribution of the reward.
+    """
+
+    BERNOULLI = "binary"
+    NORMAL = "real-valued"

@@ -6,11 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth.dependencies import authenticate_key, get_current_user
 from ..database import get_async_session
-from ..users.models import UserDB
-from .models import get_all_mabs, get_mab_by_id, save_mab_to_db, delete_mab_by_id
-from .schemas import Arm, ArmResponse, MultiArmedBandit, MultiArmedBanditResponse
+from ..exp_engine.sampling import ts_beta_binomial
 from ..schemas import Outcome
-from ..exp_engine_utils.sampling import ts_beta_binomial
+from ..users.models import UserDB
+from .models import delete_mab_by_id, get_all_mabs, get_mab_by_id, save_mab_to_db
+from .schemas import Arm, ArmResponse, MultiArmedBandit, MultiArmedBanditResponse
 
 router = APIRouter(prefix="/mab", tags=["Multi-Armed Bandits"])
 
