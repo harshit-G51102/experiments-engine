@@ -1,5 +1,4 @@
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from typing_extensions import Self
 
 from ..schemas import ArmPriors, RewardLikelihood
 
@@ -19,61 +18,15 @@ class Arm(BaseModel):
     )
 
     # prior variables
-    prior_type: ArmPriors = ArmPriors.BETA
-    alpha: float | None = None
-    beta: float | None = None
-    mu: float | None = None
-    sigma: float | None = None
+    alpha: float | None = Field(default=None)
+    beta: float | None = Field(default=None)
+    mu: float | None = Field(default=None)
+    sigma: float | None = Field(default=None)
 
     # reward likelihood
-    reward_type: RewardLikelihood = RewardLikelihood.BERNOULLI
-    successes: int | None = None
-    failures: int | None = None
-    reward: list[float] | None = None
-
-    @model_validator(mode="after")
-    def check_params(self) -> Self:
-        """
-        Check the parameters are provided correctly.
-        """
-        prior_type = self.prior_type
-        reward_type = self.reward_type
-
-        prior_params = {
-            ArmPriors.BETA: ("alpha", "beta"),
-            ArmPriors.NORMAL: ("mu", "sigma"),
-        }
-
-        reward_params = {
-            RewardLikelihood.BERNOULLI: ("successes", "failures"),
-            RewardLikelihood.NORMAL: ("reward",),
-        }
-
-        if prior_type in prior_params:
-            missing_params = [
-                param
-                for param in prior_params[prior_type]
-                if getattr(self, param) is None
-            ]
-            if missing_params:
-                raise ValueError(
-                    f"{prior_type.value} prior requires {', '.join(missing_params)}."
-                )
-
-        if reward_type in reward_params:
-            missing_params = [
-                param
-                for param in reward_params[reward_type]
-                if getattr(self, param) is None
-            ]
-            if missing_params:
-                raise ValueError(
-                    f"{reward_type.value} llhood requires {', '.join(missing_params)}."
-                )
-
-        return self
-
-    model_config = ConfigDict(from_attributes=True)
+    successes: int | None = Field(default=None)
+    failures: int | None = Field(default=None)
+    reward: list[float] | None = Field(default=None)
 
 
 class ArmResponse(Arm):
@@ -106,6 +59,10 @@ class MultiArmedBanditBase(BaseModel):
         description="The type of reward we observe from the experiment.",
         default=RewardLikelihood.BERNOULLI,
     )
+    prior_type: ArmPriors = Field(
+        description="The type of prior distribution for the arms.",
+        default=ArmPriors.BETA,
+    )
 
     is_active: bool = True
 
@@ -124,14 +81,49 @@ class MultiArmedBandit(MultiArmedBanditBase):
         """
         Check if the arm reward type is same as the experiment reward type.
         """
+        prior_type = values.get("prior_type")
         reward_type = values.get("reward_type")
         arms = values.get("arms")
+
         if arms is None:
             raise ValueError("At least one arm is required.")
-        if any(arm["reward_type"] != reward_type for arm in arms):
-            raise ValueError(
-                "All arms' reward type must be same as experiment reward type."
-            )
+
+        prior_params = {
+            ArmPriors.BETA.value: ("alpha", "beta"),
+            ArmPriors.NORMAL.value: ("mu", "sigma"),
+        }
+
+        reward_params = {
+            RewardLikelihood.BERNOULLI.value: ("successes", "failures"),
+            RewardLikelihood.NORMAL.value: ("reward",),
+        }
+
+        for arm in arms:
+            if prior_type in prior_params:
+                missing_params = []
+                for param in prior_params[prior_type]:
+                    if param not in arm.keys():
+                        missing_params.append(param)
+                    elif arm[param] is None:
+                        missing_params.append(param)
+
+                if missing_params:
+                    raise ValueError(
+                        f"{prior_type} prior requires {', '.join(missing_params)}."
+                    )
+
+            if reward_type in reward_params:
+                missing_params = []
+                for param in reward_params[reward_type]:
+                    if param not in arm.keys():
+                        missing_params.append(param)
+                    elif arm[param] is None:
+                        missing_params.append(param)
+
+                if missing_params:
+                    raise ValueError(
+                        f"{reward_type} llhood requires {', '.join(missing_params)}."
+                    )
         return values
 
     model_config = ConfigDict(from_attributes=True)

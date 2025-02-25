@@ -33,6 +33,7 @@ class MultiArmedBanditDB(Base):
 
     name: Mapped[str] = mapped_column(String(length=150), nullable=False)
     description: Mapped[str] = mapped_column(String(length=500), nullable=True)
+    prior_type: Mapped[str] = mapped_column(String(length=50), nullable=False)
     reward_type: Mapped[str] = mapped_column(String(length=50), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
@@ -60,14 +61,12 @@ class ArmDB(Base):
     description: Mapped[str] = mapped_column(String(length=500), nullable=True)
 
     # prior variables
-    prior_type: Mapped[str] = mapped_column(String(length=50), nullable=False)
     alpha: Mapped[float] = mapped_column(Float, nullable=True)
     beta: Mapped[float] = mapped_column(Float, nullable=True)
     mu: Mapped[float] = mapped_column(Float, nullable=True)
     sigma: Mapped[float] = mapped_column(Float, nullable=True)
 
     # reward variables
-    reward_type: Mapped[str] = mapped_column(String(length=50), nullable=False)
     successes: Mapped[int] = mapped_column(Integer, nullable=True)
     failures: Mapped[int] = mapped_column(Integer, nullable=True)
     reward: Mapped[list[float]] = mapped_column(ARRAY(Float), nullable=True)
@@ -85,18 +84,13 @@ async def save_mab_to_db(
     """
     Save the experiment to the database.
     """
-    arms = []
-    for arm in experiment.arms:
-        arm_data = arm.model_dump()
-        arm_data["prior_type"] = arm_data["prior_type"].value
-        arm_data["reward_type"] = arm_data["reward_type"].value
-
-        arms.append(
-            ArmDB(
-                **arm_data,
-                user_id=user_id,
-            )
+    arms = [
+        ArmDB(
+            **arm.model_dump(),
+            user_id=user_id,
         )
+        for arm in experiment.arms
+    ]
 
     experiment_db = MultiArmedBanditDB(
         name=experiment.name,
@@ -104,6 +98,7 @@ async def save_mab_to_db(
         user_id=user_id,
         is_active=experiment.is_active,
         arms=arms,
+        prior_type=experiment.prior_type.value,
         reward_type=experiment.reward_type.value,
     )
 
