@@ -6,11 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth.dependencies import authenticate_key, get_current_user
 from ..database import get_async_session
-from ..users.models import UserDB
-from .models import get_all_mabs, get_mab_by_id, save_mab_to_db, delete_mab_by_id
-from .schemas import Arm, ArmResponse, MultiArmedBandit, MultiArmedBanditResponse
-from ..schemas import Outcome
 from ..exp_engine_utils.sampling import ts_beta_binomial
+from ..schemas import Outcome
+from ..users.models import UserDB
+from .models import delete_mab_by_id, get_all_mabs, get_mab_by_id, save_mab_to_db
+from .schemas import Arm, ArmResponse, MultiArmedBandit, MultiArmedBanditResponse
 
 router = APIRouter(prefix="/mab", tags=["Multi-Armed Bandits"])
 
@@ -66,20 +66,20 @@ async def delete_mab(
     experiment_id: int,
     user_db: Annotated[UserDB, Depends(get_current_user)],
     asession: AsyncSession = Depends(get_async_session),
-) -> dict:
+) -> dict | HTTPException:
     """
     Delete the experiment with the provided `experiment_id`.
     """
     try:
         experiment = await get_mab_by_id(experiment_id, user_db.user_id, asession)
         if experiment is None:
-            return HTTPException(
+            raise HTTPException(
                 status_code=404, detail=f"Experiment with id {experiment_id} not found"
             )
         await delete_mab_by_id(experiment_id, user_db.user_id, asession)
         return {"message": f"Experiment with id {experiment_id} deleted successfully."}
     except Exception as e:
-        return HTTPException(status_code=500, detail=f"Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {e}") from e
 
 
 @router.get("/{experiment_id}/draw", response_model=Arm)
@@ -87,7 +87,7 @@ async def get_arm(
     experiment_id: int,
     user_db: UserDB = Depends(authenticate_key),
     asession: AsyncSession = Depends(get_async_session),
-) -> ArmResponse | HTTPException:
+) -> ArmResponse:
     """
     Get which arm to pull next for provided experiment.
     """

@@ -66,6 +66,12 @@ class MultiArmedBanditBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class Notification(BaseModel):
+    """
+    Pydantic model for a notifications.
+    """
+
+
 class MultiArmedBandit(MultiArmedBanditBase):
     """
     Pydantic model for an experiment.
