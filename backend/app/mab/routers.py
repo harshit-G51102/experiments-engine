@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..auth.dependencies import authenticate_key, get_current_user
 from ..database import get_async_session
 from ..exp_engine.thompson_sampling import mab_choose_arm
-from ..schemas import Outcome, RewardLikelihood
+from ..schemas import RewardLikelihood
 from ..users.models import UserDB
 from .models import delete_mab_by_id, get_all_mabs, get_mab_by_id, save_mab_to_db
 from .schemas import Arm, ArmResponse, MultiArmedBandit, MultiArmedBanditResponse
@@ -107,7 +107,7 @@ async def get_arm(
 async def update_arm(
     experiment_id: int,
     arm_id: int,
-    outcome: Outcome | float,
+    outcome: float,
     user_db: UserDB = Depends(authenticate_key),
     asession: AsyncSession = Depends(get_async_session),
 ) -> ArmResponse | HTTPException:
@@ -127,24 +127,18 @@ async def update_arm(
     else:
         arm = arms[0]
 
-    if experiment.reward_type == RewardLikelihood.BERNOULLI:
-        if outcome == Outcome.SUCCESS:
+    if experiment.reward_type == RewardLikelihood.BERNOULLI.value:
+        if outcome == 1:
             arm.successes += 1
-        elif outcome == Outcome.FAILURE:
+        elif outcome == 0:
             arm.failures += 1
         else:
             return HTTPException(
                 status_code=404,
                 detail="Only binary-valued outcomes allowed for Bernoulli rewards.",
             )
-    elif experiment.reward_type == RewardLikelihood.NORMAL:
-        if type(outcome) is float:
-            arm.reward.append(outcome)
-        else:
-            raise HTTPException(
-                status_code=404,
-                detail="Outcome can only take float values for real-valued rewards.",
-            )
+    elif experiment.reward_type == RewardLikelihood.NORMAL.value:
+        arm.reward.append(outcome)
 
     await asession.commit()
 
