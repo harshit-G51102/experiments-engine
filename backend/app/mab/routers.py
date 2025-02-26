@@ -138,7 +138,7 @@ async def update_arm(
                 detail="Only binary-valued outcomes allowed for Bernoulli rewards.",
             )
     elif experiment.reward_type == RewardLikelihood.NORMAL.value:
-        arm.reward.append(outcome)
+        arm.reward = list(arm.reward) + [outcome]
 
     await asession.commit()
 

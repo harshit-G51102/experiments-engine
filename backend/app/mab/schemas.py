@@ -1,4 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing_extensions import Self
 
 from ..exp_engine.schemas import ArmPriors, RewardLikelihood
 
@@ -27,6 +28,22 @@ class Arm(BaseModel):
     successes: int | None = Field(default=None)
     failures: int | None = Field(default=None)
     reward: list[float] | None = Field(default=None)
+
+    @model_validator(mode="after")
+    def check_values(self) -> Self:
+        """
+        Check if the values are unique.
+        """
+        alpha = self.alpha
+        beta = self.beta
+        sigma = self.sigma
+        if alpha is not None and alpha <= 0:
+            raise ValueError("Alpha must be greater than 0.")
+        if beta is not None and beta <= 0:
+            raise ValueError("Beta must be greater than 0.")
+        if sigma is not None and sigma <= 0:
+            raise ValueError("Sigma must be greater than 0.")
+        return self
 
 
 class ArmResponse(Arm):

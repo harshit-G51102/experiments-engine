@@ -2,7 +2,7 @@ import numpy as np
 from numpy.random import beta, normal
 
 from ..mab.schemas import MultiArmedBanditResponse
-from ..schemas import ArmPriors, RewardLikelihood
+from .schemas import ArmPriors, RewardLikelihood
 
 
 def mab_beta_binomial(
@@ -35,13 +35,13 @@ def mab_normal(
     rewards: rewards for each arm
     sigma_llhood:
     """
-    num_updates = len(rewards)
+    num_updates = np.array([reward.size for reward in rewards])
     current_sigmas = (sigmas * sigma_llhood) / np.sqrt(
         num_updates * sigmas**2 + sigma_llhood**2
     )
     current_mus = (current_sigmas / sigmas) ** 2 * mus + (
         current_sigmas / sigmas
-    ) ** 2 * num_updates * rewards.mean()
+    ) ** 2 * num_updates * np.array([reward.mean() for reward in rewards])
 
     samples = normal(loc=current_mus, scale=current_sigmas)
     return samples.argmax()
@@ -73,7 +73,7 @@ def mab_choose_arm(experiment: MultiArmedBanditResponse) -> int:
     ):
         mus = np.array([arm.mu for arm in experiment.arms])
         sigmas = np.array([arm.sigma for arm in experiment.arms])
-        rewards = np.array([np.array(arm.rewards) for arm in experiment.arms])
+        rewards = [np.array(arm.reward) for arm in experiment.arms]
         # TODO: add support for non-std sigma_llhood
         return mab_normal(mus=mus, sigmas=sigmas, rewards=rewards, sigma_llhood=1.0)
     else:
