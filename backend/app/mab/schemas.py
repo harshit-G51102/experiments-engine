@@ -1,7 +1,9 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import Self
 
-from ..exp_engine.schemas import ArmPriors, RewardLikelihood
+from ..exp_engine.schemas import ArmPriors, Outcome, RewardLikelihood
 
 
 class Arm(BaseModel):
@@ -23,11 +25,6 @@ class Arm(BaseModel):
     beta: float | None = Field(default=None)
     mu: float | None = Field(default=None)
     sigma: float | None = Field(default=None)
-
-    # reward likelihood
-    successes: int | None = Field(default=None)
-    failures: int | None = Field(default=None)
-    reward: list[float] | None = Field(default=None)
 
     @model_validator(mode="after")
     def check_values(self) -> Self:
@@ -99,7 +96,6 @@ class MultiArmedBandit(MultiArmedBanditBase):
         Check if the arm reward type is same as the experiment reward type.
         """
         prior_type = values.get("prior_type")
-        reward_type = values.get("reward_type")
         arms = values.get("arms")
 
         if arms is None:
@@ -108,11 +104,6 @@ class MultiArmedBandit(MultiArmedBanditBase):
         prior_params = {
             ArmPriors.BETA.value: ("alpha", "beta"),
             ArmPriors.NORMAL.value: ("mu", "sigma"),
-        }
-
-        reward_params = {
-            RewardLikelihood.BERNOULLI.value: ("successes", "failures"),
-            RewardLikelihood.NORMAL.value: ("reward",),
         }
 
         for arm in arms:
@@ -129,18 +120,6 @@ class MultiArmedBandit(MultiArmedBanditBase):
                         f"{prior_type} prior requires {', '.join(missing_params)}."
                     )
 
-            if reward_type in reward_params:
-                missing_params = []
-                for param in reward_params[reward_type]:
-                    if param not in arm.keys():
-                        missing_params.append(param)
-                    elif arm[param] is None:
-                        missing_params.append(param)
-
-                if missing_params:
-                    raise ValueError(
-                        f"{reward_type} llhood requires {', '.join(missing_params)}."
-                    )
         return values
 
     model_config = ConfigDict(from_attributes=True)
@@ -154,5 +133,58 @@ class MultiArmedBanditResponse(MultiArmedBanditBase):
 
     experiment_id: int
     arms: list[ArmResponse]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MABObservationBase(BaseModel):
+    """
+    Pydantic model for an observation of the experiment.
+    """
+
+    experiment_id: int
+    arm_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MABObservationBinary(MABObservationBase):
+    """
+    Pydantic model for binary observations of the experiment.
+    """
+
+    reward: Outcome
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MABObservationRealVal(MABObservationBase):
+    """
+    Pydantic model for real-valued observations of the experiment.
+    """
+
+    reward: float
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MABObservationBinaryResponse(MABObservationBinary):
+    """
+    Pydantic model for an response for observation creation
+    """
+
+    observation_id: int
+    obs_datetime_utc: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MABObservationRealValResponse(MABObservationRealVal):
+    """
+    Pydantic model for an response for observation creation
+    """
+
+    observation_id: int
+    obs_datetime_utc: datetime
 
     model_config = ConfigDict(from_attributes=True)

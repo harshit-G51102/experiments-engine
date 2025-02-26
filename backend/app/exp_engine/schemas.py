@@ -28,6 +28,15 @@ class RewardLikelihood(Enum):
     NORMAL = "real-valued"
 
 
+class ContextType(Enum):
+    """
+    Enum for the type of context.
+    """
+
+    BINARY = "binary"
+    REAL_VALUED = "real-valued"
+
+
 # class PosteriorSampling(Enum):
 #     """"""
 #     THOMPSON_SAMPLING = "thompson_sampling"

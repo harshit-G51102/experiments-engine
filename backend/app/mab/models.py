@@ -1,20 +1,22 @@
+from datetime import datetime, timezone
 from typing import Sequence
 
 from sqlalchemy import (
-    ARRAY,
     Boolean,
+    DateTime,
     Float,
     ForeignKey,
     Integer,
     String,
     delete,
+    func,
     select,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..models import Base
-from .schemas import MultiArmedBandit
+from .schemas import MABObservationBinary, MABObservationRealVal, MultiArmedBandit
 
 
 class MultiArmedBanditDB(Base):
@@ -39,6 +41,9 @@ class MultiArmedBanditDB(Base):
 
     arms: Mapped[list["ArmDB"]] = relationship(
         "ArmDB", back_populates="experiment", lazy="joined"
+    )
+    observations: Mapped[list["ObservationDB"]] = relationship(
+        "ObservationDB", back_populates="experiment", lazy="joined"
     )
 
 
@@ -66,13 +71,44 @@ class ArmDB(Base):
     mu: Mapped[float] = mapped_column(Float, nullable=True)
     sigma: Mapped[float] = mapped_column(Float, nullable=True)
 
-    # reward variables
-    successes: Mapped[int] = mapped_column(Integer, nullable=True)
-    failures: Mapped[int] = mapped_column(Integer, nullable=True)
-    reward: Mapped[list[float]] = mapped_column(ARRAY(Float), nullable=True)
-
     experiment: Mapped[MultiArmedBanditDB] = relationship(
         "MultiArmedBanditDB", back_populates="arms", lazy="joined"
+    )
+    observations: Mapped[list["ObservationDB"]] = relationship(
+        "ObservationDB", back_populates="arm", lazy="joined"
+    )
+
+
+class ObservationDB(Base):
+    """
+    ORM for managing observations of an experiment
+    """
+
+    __tablename__ = "observations"
+
+    observation_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, nullable=False
+    )
+    arm_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("arms.arm_id"), nullable=False
+    )
+    experiment_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("mabs.experiment_id"), nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.user_id"), nullable=False
+    )
+
+    reward: Mapped[float] = mapped_column(Float, nullable=False)
+    obs_datetime_utc: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    arm: Mapped[ArmDB] = relationship(
+        "ArmDB", back_populates="observations", lazy="joined"
+    )
+    experiment: Mapped[MultiArmedBanditDB] = relationship(
+        "MultiArmedBanditDB", back_populates="observations", lazy="joined"
     )
 
 
@@ -150,6 +186,11 @@ async def delete_mab_by_id(
     Delete the experiment by id.
     """
     await asession.execute(
+        delete(ObservationDB)
+        .where(ObservationDB.user_id == user_id)
+        .where(ObservationDB.experiment_id == experiment_id)
+    )
+    await asession.execute(
         delete(ArmDB)
         .where(ArmDB.user_id == user_id)
         .where(ArmDB.experiment_id == experiment_id)
@@ -161,3 +202,57 @@ async def delete_mab_by_id(
     )
     await asession.commit()
     return None
+
+
+async def save_observation_to_db(
+    observation: MABObservationRealVal | MABObservationBinary,
+    user_id: int,
+    asession: AsyncSession,
+) -> ObservationDB:
+    """
+    Save the observation to the database.
+    """
+    observation_db = ObservationDB(
+        **observation.model_dump(),
+        obs_datetime_utc=datetime.now(timezone.utc),
+        user_id=user_id,
+    )
+
+    asession.add(observation_db)
+    await asession.commit()
+    await asession.refresh(observation_db)
+
+    return observation_db
+
+
+async def get_rewards_by_experiment_arm_id(
+    experiment_id: int, arm_id: int, user_id: int, asession: AsyncSession
+) -> Sequence[ObservationDB]:
+    """
+    Get the observations for the experiment and arm.
+    """
+    statement = (
+        select(ObservationDB)
+        .where(ObservationDB.user_id == user_id)
+        .where(ObservationDB.experiment_id == experiment_id)
+        .where(ObservationDB.arm_id == arm_id)
+        .order_by(ObservationDB.obs_datetime_utc)
+    )
+
+    return (await asession.execute(statement)).unique().scalars().all()
+
+
+async def get_all_rewards_by_experiment_id(
+    experiment_id: int, user_id: int, asession: AsyncSession
+) -> Sequence[ObservationDB]:
+    """
+    Get the observations for the experiment and arm.
+    """
+    statement = (
+        select(ObservationDB)
+        .where(ObservationDB.user_id == user_id)
+        .where(ObservationDB.experiment_id == experiment_id)
+        .order_by(ObservationDB.obs_datetime_utc)
+    )
+
+    return (await asession.execute(statement)).unique().scalars().all()

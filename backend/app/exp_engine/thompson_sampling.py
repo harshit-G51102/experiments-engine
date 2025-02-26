@@ -2,7 +2,7 @@ import numpy as np
 from numpy.random import beta, normal
 
 from ..mab.schemas import MultiArmedBanditResponse
-from .schemas import ArmPriors, RewardLikelihood
+from .schemas import ArmPriors, Outcome, RewardLikelihood
 
 
 def mab_beta_binomial(
@@ -47,7 +47,7 @@ def mab_normal(
     return samples.argmax()
 
 
-def mab_choose_arm(experiment: MultiArmedBanditResponse) -> int:
+def mab_choose_arm(experiment: MultiArmedBanditResponse, rewards_dict: dict) -> int:
     """
     Choose arm based on posterior
 
@@ -56,14 +56,23 @@ def mab_choose_arm(experiment: MultiArmedBanditResponse) -> int:
     experiment : MultiArmedBanditResponse
         The experiment data containing priors and rewards for each arm.
     """
-    print(experiment.prior_type, experiment.reward_type)
     if (experiment.prior_type == ArmPriors.BETA) and (
         experiment.reward_type == RewardLikelihood.BERNOULLI
     ):
         alphas = np.array([arm.alpha for arm in experiment.arms])
         betas = np.array([arm.beta for arm in experiment.arms])
-        successes = np.array([arm.successes for arm in experiment.arms])
-        failures = np.array([arm.failures for arm in experiment.arms])
+        successes = np.array(
+            [
+                sum(np.array(rewards_dict[arm.arm_id]) == Outcome.SUCCESS.value)
+                for arm in experiment.arms
+            ]
+        )
+        failures = np.array(
+            [
+                sum(np.array(rewards_dict[arm.arm_id]) == Outcome.FAILURE.value)
+                for arm in experiment.arms
+            ]
+        )
         return mab_beta_binomial(
             alphas=alphas, betas=betas, successes=successes, failures=failures
         )
@@ -73,7 +82,7 @@ def mab_choose_arm(experiment: MultiArmedBanditResponse) -> int:
     ):
         mus = np.array([arm.mu for arm in experiment.arms])
         sigmas = np.array([arm.sigma for arm in experiment.arms])
-        rewards = [np.array(arm.reward) for arm in experiment.arms]
+        rewards = [np.array(rewards_dict[arm.arm_id]) for arm in experiment.arms]
         # TODO: add support for non-std sigma_llhood
         return mab_normal(mus=mus, sigmas=sigmas, rewards=rewards, sigma_llhood=1.0)
     else:
