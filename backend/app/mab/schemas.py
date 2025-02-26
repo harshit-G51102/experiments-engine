@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from ..schemas import ArmPriors, RewardLikelihood
+from ..exp_engine.schemas import ArmPriors, RewardLikelihood
 
 
 class Arm(BaseModel):

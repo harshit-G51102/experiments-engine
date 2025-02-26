@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth.dependencies import authenticate_key, get_current_user
 from ..database import get_async_session
+from ..exp_engine.schemas import Outcome, RewardLikelihood
 from ..exp_engine.thompson_sampling import mab_choose_arm
-from ..schemas import RewardLikelihood
 from ..users.models import UserDB
 from .models import delete_mab_by_id, get_all_mabs, get_mab_by_id, save_mab_to_db
 from .schemas import Arm, ArmResponse, MultiArmedBandit, MultiArmedBanditResponse
@@ -128,9 +128,9 @@ async def update_arm(
         arm = arms[0]
 
     if experiment.reward_type == RewardLikelihood.BERNOULLI.value:
-        if outcome == 1:
+        if outcome == Outcome.SUCCESS.value:
             arm.successes += 1
-        elif outcome == 0:
+        elif outcome == Outcome.FAILURE.value:
             arm.failures += 1
         else:
             return HTTPException(
