@@ -19,7 +19,6 @@ from .models import (
     save_observation_to_db,
 )
 from .schemas import (
-    Arm,
     ArmResponse,
     MABObservationBinary,
     MABObservationBinaryResponse,
@@ -100,7 +99,7 @@ async def delete_mab(
         return HTTPException(status_code=500, detail=f"Error: {e}")
 
 
-@router.get("/{experiment_id}/draw", response_model=Arm)
+@router.get("/{experiment_id}/draw", response_model=ArmResponse)
 async def get_arm(
     experiment_id: int,
     user_db: UserDB = Depends(authenticate_key),
@@ -131,7 +130,7 @@ async def get_arm(
     return ArmResponse.model_validate(experiment.arms[chosen_arm])
 
 
-@router.put("/{experiment_id}/{arm_id}/{outcome}", response_model=Arm)
+@router.put("/{experiment_id}/{arm_id}/{outcome}", response_model=ArmResponse)
 async def update_arm(
     experiment_id: int,
     arm_id: int,
