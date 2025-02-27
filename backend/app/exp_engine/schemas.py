@@ -1,5 +1,7 @@
 from enum import Enum
 
+import numpy as np
+
 
 class Outcome(int, Enum):
     """
@@ -42,9 +44,23 @@ class ContextType(Enum):
 #     THOMPSON_SAMPLING = "thompson_sampling"
 
 
-# class ContextLinkFunctions(Enum):
-#     NONE = "none"
-#     LOGISTIC = "logistic"
+def none(x: np.ndarray) -> np.ndarray:
+    """
+    Identity function
+    """
+    return x
+
+
+def logistic(x: np.ndarray) -> np.ndarray:
+    """
+    Logistic function
+    """
+    return 1.0 / (1.0 + np.exp(-x))
+
+
+class ContextLinkFunctions(Enum):
+    NONE = none
+    LOGISTIC = logistic
 
 
 # class ContextualArmPriorParams(BaseModel):

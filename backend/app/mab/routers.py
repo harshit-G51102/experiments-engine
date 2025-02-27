@@ -7,17 +7,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..auth.dependencies import authenticate_key, get_current_user
 from ..database import get_async_session
 from ..exp_engine.schemas import RewardLikelihood
-from ..exp_engine.thompson_sampling import mab_choose_arm
 from ..users.models import UserDB
 from .models import (
     delete_mab_by_id,
     get_all_mabs,
     get_all_rewards_by_experiment_id,
     get_mab_by_id,
-    get_rewards_by_experiment_arm_id,
     save_mab_to_db,
     save_observation_to_db,
 )
+from .sampling_utils import choose_arm, update_arm_params
 from .schemas import (
     ArmResponse,
     MABObservationBinary,
@@ -114,19 +113,7 @@ async def get_arm(
             status_code=404, detail=f"Experiment with id {experiment_id} not found"
         )
     experiment_data = MultiArmedBanditResponse.model_validate(experiment)
-    rewards_per_arm = {}
-    for arm in experiment_data.arms:
-        rewards = await get_rewards_by_experiment_arm_id(
-            experiment_id, arm.arm_id, user_db.user_id, asession
-        )
-        if rewards:
-            rewards_per_arm[arm.arm_id] = [r.reward for r in rewards]
-        else:
-            rewards_per_arm[arm.arm_id] = []
-    chosen_arm = mab_choose_arm(
-        experiment=experiment_data, rewards_dict=rewards_per_arm
-    )
-
+    chosen_arm = choose_arm(experiment=experiment_data)
     return ArmResponse.model_validate(experiment.arms[chosen_arm])
 
 
@@ -153,23 +140,31 @@ async def update_arm(
         return HTTPException(status_code=404, detail=f"Arm with id {arm_id} not found")
     else:
         arm = arms[0]
+        reward = None
+        if experiment.reward_type == RewardLikelihood.BERNOULLI.value:
+            reward = MABObservationBinary.model_validate(
+                dict(experiment_id=experiment_id, arm_id=arm_id, reward=outcome)
+            )
+            arm.alpha, arm.beta = update_arm_params(
+                arm, experiment.prior_type, experiment.reward_type, reward.reward
+            )
 
-    reward = None
-    if experiment.reward_type == RewardLikelihood.BERNOULLI.value:
-        reward = MABObservationBinary.model_validate(
-            dict(experiment_id=experiment_id, arm_id=arm_id, reward=outcome)
-        )
-    elif experiment.reward_type == RewardLikelihood.NORMAL.value:
-        reward = MABObservationRealVal.model_validate(
-            dict(experiment_id=experiment_id, arm_id=arm_id, reward=outcome)
-        )
+        elif experiment.reward_type == RewardLikelihood.NORMAL.value:
+            reward = MABObservationRealVal.model_validate(
+                dict(experiment_id=experiment_id, arm_id=arm_id, reward=outcome)
+            )
+            arm.mu, arm.sigma = update_arm_params(
+                arm, experiment.prior_type, experiment.reward_type, reward.reward
+            )
 
-    if not reward:
-        return HTTPException(
-            status_code=400, detail="No reward found for the experiment."
-        )
+        if not reward:
+            raise HTTPException(
+                status_code=400, detail="No reward found for the experiment."
+            )
 
-    await save_observation_to_db(reward, user_db.user_id, asession)
+        await asession.commit()
+        await save_observation_to_db(reward, user_db.user_id, asession)
+
     return ArmResponse.model_validate(arm)
 
 
