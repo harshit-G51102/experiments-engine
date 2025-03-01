@@ -59,8 +59,14 @@ def logistic(x: np.ndarray) -> np.ndarray:
 
 
 class ContextLinkFunctions(Enum):
-    NONE = none
-    LOGISTIC = logistic
+    NONE = "none"
+    LOGISTIC = "logistic"
+
+    def __call__(self, x: np.ndarray) -> np.ndarray:
+        if self == ContextLinkFunctions.NONE:
+            return x
+        elif self == ContextLinkFunctions.LOGISTIC:
+            return 1.0 / (1.0 + np.exp(-x))
 
 
 # class ContextualArmPriorParams(BaseModel):

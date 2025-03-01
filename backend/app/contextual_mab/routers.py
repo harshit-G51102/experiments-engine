@@ -107,7 +107,7 @@ async def get_arm(
     context: list[float] = Query(..., description="List of context values"),
     user_db: UserDB = Depends(authenticate_key),
     asession: AsyncSession = Depends(get_async_session),
-) -> ContextualArmResponse | HTTPException:
+) -> ContextualArmResponse:
     """
     Get which arm to pull next for provided experiment.
     """
@@ -115,11 +115,11 @@ async def get_arm(
         experiment_id, user_db.user_id, asession
     )
     if experiment is None:
-        return HTTPException(
+        raise HTTPException(
             status_code=404, detail=f"Experiment with id {experiment_id} not found"
         )
     if len(experiment.contexts) != len(context):
-        return HTTPException(
+        raise HTTPException(
             status_code=400,
             detail="Number of contexts provided does not match the num contexts.",
         )
@@ -127,14 +127,14 @@ async def get_arm(
         zip(sorted(experiment.contexts, key=lambda x: x.context_id), context)
     ):
         if c_db.value_type == ContextType.BINARY and c not in [0, 1]:
-            return HTTPException(
+            raise HTTPException(
                 status_code=400,
                 detail=f"Context {i} must be binary.",
             )
         elif c_db.value_type == ContextType.REAL_VALUED and not isinstance(
             c, (int, float)
         ):
-            return HTTPException(
+            raise HTTPException(
                 status_code=400,
                 detail=f"Context {i} must be real-valued.",
             )
@@ -151,7 +151,7 @@ async def update_arm(
     context: list[float] = Query(..., description="List of context values"),
     user_db: UserDB = Depends(authenticate_key),
     asession: AsyncSession = Depends(get_async_session),
-) -> ContextualArmResponse | HTTPException:
+) -> ContextualArmResponse:
     """
     Update the arm with the provided `arm_id` for the given
     `experiment_id` based on the `outcome`.
@@ -160,18 +160,18 @@ async def update_arm(
         experiment_id, user_db.user_id, asession
     )
     if experiment is None:
-        return HTTPException(
+        raise HTTPException(
             status_code=404, detail=f"Experiment with id {experiment_id} not found"
         )
     if len(experiment.contexts) != len(context):
-        return HTTPException(
+        raise HTTPException(
             status_code=400,
             detail="Number of contexts provided does not match the num contexts.",
         )
 
     arms = [a for a in experiment.arms if a.arm_id == arm_id]
     if not arms:
-        return HTTPException(status_code=404, detail=f"Arm with id {arm_id} not found")
+        raise HTTPException(status_code=404, detail=f"Arm with id {arm_id} not found")
     else:
         arm = arms[0]
 
@@ -179,14 +179,14 @@ async def update_arm(
             zip(sorted(experiment.contexts, key=lambda x: x.context_id), context)
         ):
             if c_db.value_type == ContextType.BINARY and c not in [0, 1]:
-                return HTTPException(
+                raise HTTPException(
                     status_code=400,
                     detail=f"Context {i} must be binary.",
                 )
             elif c_db.value_type == ContextType.REAL_VALUED and not isinstance(
                 c, (int, float)
             ):
-                return HTTPException(
+                raise HTTPException(
                     status_code=400,
                     detail=f"Context {i} must be real-valued.",
                 )
@@ -227,4 +227,4 @@ async def update_arm(
 
             return ContextualArmResponse.model_validate(arm)
         else:
-            return HTTPException(status_code=400, detail="Error with updating arm.")
+            raise HTTPException(status_code=400, detail="Error with updating arm.")

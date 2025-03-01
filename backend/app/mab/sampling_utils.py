@@ -102,7 +102,7 @@ def update_arm_params(
     prior_type: ArmPriors,
     reward_type: RewardLikelihood,
     reward: float,
-) -> MultiArmedBanditResponse:
+) -> tuple:
     """
     Update the arm with the provided `arm_id` based on the `reward`.
 
@@ -126,3 +126,5 @@ def update_arm_params(
             reward=reward,
             sigma_llhood=1.0,  # TODO: add support for non-std sigma_llhood
         )
+    else:
+        raise ValueError("Prior and reward type combination is not supported.")

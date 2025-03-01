@@ -2,7 +2,17 @@ from datetime import datetime, timezone
 from typing import Sequence
 
 import numpy as np
-from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, delete, select
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    delete,
+    func,
+    select,
+)
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -124,7 +134,9 @@ class ContextualObservationDB(Base):
 
     reward: Mapped[float] = mapped_column(Float, nullable=True)
     context_val: Mapped[list[float]] = mapped_column(ARRAY(Float), nullable=False)
-    obs_timestamp_utc: Mapped[str] = mapped_column(String(length=50), nullable=False)
+    obs_timestamp_utc: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
 
     experiment: Mapped[ContextualBanditDB] = relationship(
         "ContextualBanditDB", back_populates="observations", lazy="joined"

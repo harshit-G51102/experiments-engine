@@ -156,6 +156,11 @@ async def update_arm(
             arm.mu, arm.sigma = update_arm_params(
                 arm, experiment.prior_type, experiment.reward_type, reward.reward
             )
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Prior and reward type combinatin not supported.",
+            )
 
         if not reward:
             raise HTTPException(

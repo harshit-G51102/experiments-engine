@@ -26,7 +26,7 @@ def sample_normal(
             for mu, cov in zip(mus, covariances)
         ]
     ).reshape(-1, len(context))
-    probs = link_function.value(samples @ context)
+    probs = link_function(samples @ context)
     return probs.argmax()
 
 
@@ -104,10 +104,12 @@ def update_arm_params(
     reward : The reward of the arm.
     context : The context vector.
     """
-    if prior_type == ArmPriors.NORMAL and reward_type == RewardLikelihood.NORMAL:
+    if (prior_type == ArmPriors.NORMAL.value) and (
+        reward_type == RewardLikelihood.NORMAL.value
+    ):
         return update_arm_normal(
             current_mu=np.array(arm.mu),
-            current_covariance=np.ndarray(arm.covariance),
+            current_covariance=np.array(arm.covariance),
             reward=reward,
             context=np.array(context),
             sigma_llhood=1.0,  # TODO: need to implement likelihood stddev
