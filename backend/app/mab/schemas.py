@@ -3,7 +3,12 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import Self
 
-from ..exp_engine.schemas import ArmPriors, Outcome, RewardLikelihood
+from ..exp_engine.schemas import (
+    ArmPriors,
+    Outcome,
+    RewardLikelihood,
+    allowed_combos_mab,
+)
 
 
 class Arm(BaseModel):
@@ -95,6 +100,7 @@ class MultiArmedBandit(MultiArmedBanditBase):
         """
         Check if the arm reward type is same as the experiment reward type.
         """
+        reward_type = values.get("reward_type")
         prior_type = values.get("prior_type")
         arms = values.get("arms")
 
@@ -105,6 +111,12 @@ class MultiArmedBandit(MultiArmedBanditBase):
             ArmPriors.BETA.value: ("alpha", "beta"),
             ArmPriors.NORMAL.value: ("mu", "sigma"),
         }
+
+        if (prior_type, reward_type) not in allowed_combos_mab:
+            raise ValueError(
+                f"Prior and reward type combination {prior_type} and\
+                    {reward_type} is not supported."
+            )
 
         for arm in arms:
             if prior_type in prior_params:

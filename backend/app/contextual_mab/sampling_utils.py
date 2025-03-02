@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.optimize import minimize
 
 from ..exp_engine.schemas import ArmPriors, ContextLinkFunctions, RewardLikelihood
 from .schemas import ContextualArmResponse, ContextualBanditResponse
@@ -60,6 +61,44 @@ def update_arm_normal(
     return new_mu, new_covariance
 
 
+def update_arm_laplace(
+    current_mu: np.ndarray,
+    current_covariance: np.ndarray,
+    reward: np.ndarray,
+    context: np.ndarray,
+    link_function: ContextLinkFunctions,
+    reward_likelihood: RewardLikelihood,
+    prior_type: ArmPriors,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Update the mean and covariance using the Laplace approximation.
+
+    Parameters
+    ----------
+    current_mu : The mean of the normal distribution.
+    current_covariance : The covariance matrix of the normal distribution.
+    reward : The list of rewards for the arm.
+    context : The list of contexts for the arm.
+    link_function : The link function for parameters to rewards.
+    reward_likelihood : The likelihood function of the reward.
+    prior_type : The prior type of the arm.
+    """
+
+    def objective(theta: np.ndarray) -> float:
+        # Log prior
+        log_prior = prior_type(theta, mu=current_mu, covariance=current_covariance)
+
+        # Log likelihood
+        log_likelihood = reward_likelihood(reward, link_function(context @ theta))
+
+        return -log_prior - log_likelihood
+
+    result = minimize(objective, current_mu, method="L-BFGS-B", hess="2-point")
+    new_mu = result.x
+    new_covariance = result.hess_inv.todense()
+    return new_mu, new_covariance
+
+
 def choose_arm(experiment: ContextualBanditResponse, context: np.ndarray) -> int:
     """
     Choose the arm with the highest probability.
@@ -90,9 +129,9 @@ def update_arm_params(
     arm: ContextualArmResponse,
     prior_type: ArmPriors,
     reward_type: RewardLikelihood,
-    reward: float,
+    reward: np.ndarray,
     context: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray] | None:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Update the arm parameters.
 
@@ -101,8 +140,8 @@ def update_arm_params(
     arm : The arm object.
     prior_type : The prior type of the arm.
     reward_type : The reward type of the arm.
-    reward : The reward of the arm.
-    context : The context vector.
+    reward : All rewards for the arm.
+    context : All context vectors for the arm.
     """
     if (prior_type == ArmPriors.NORMAL.value) and (
         reward_type == RewardLikelihood.NORMAL.value
@@ -110,9 +149,21 @@ def update_arm_params(
         return update_arm_normal(
             current_mu=np.array(arm.mu),
             current_covariance=np.array(arm.covariance),
-            reward=reward,
-            context=np.array(context),
+            reward=reward[-1],
+            context=np.array(context[-1]),
             sigma_llhood=1.0,  # TODO: need to implement likelihood stddev
         )
-
-    return None
+    elif (prior_type == ArmPriors.NORMAL.value) and (
+        reward_type == RewardLikelihood.BERNOULLI.value
+    ):
+        return update_arm_laplace(
+            current_mu=np.array(arm.mu),
+            current_covariance=np.array(arm.covariance),
+            reward=np.array(reward),
+            context=np.array(context),
+            link_function=ContextLinkFunctions.LOGISTIC,
+            reward_likelihood=RewardLikelihood.BERNOULLI,
+            prior_type=ArmPriors.NORMAL,
+        )
+    else:
+        raise ValueError("Prior and reward type combination is not supported.")
