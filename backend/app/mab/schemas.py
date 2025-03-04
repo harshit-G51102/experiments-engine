@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 
+from ..schemas import Notifications, NotificationsResponse
+
 
 class Arm(BaseModel):
     """
@@ -23,16 +25,6 @@ class Arm(BaseModel):
         description="The beta parameter of the beta distribution.",
         examples=[1, 10, 100],
     )
-    successes: int = Field(
-        description="The number of successes for the arm.",
-        examples=[0, 10, 100],
-        default=0,
-    )
-    failures: int = Field(
-        description="The number of failures for the arm.",
-        examples=[0, 10, 100],
-        default=0,
-    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -44,7 +36,20 @@ class ArmResponse(Arm):
 
     arm_id: int
 
-    model_config = ConfigDict(from_attributes=True)
+    successes: int = Field(
+        description="The number of successes for the arm.",
+        examples=[0, 10, 100],
+        default=0,
+    )
+    failures: int = Field(
+        description="The number of failures for the arm.",
+        examples=[0, 10, 100],
+        default=0,
+    )
+
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
 
 
 class MultiArmedBanditBase(BaseModel):
@@ -66,19 +71,13 @@ class MultiArmedBanditBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class Notification(BaseModel):
-    """
-    Pydantic model for a notifications.
-    """
-
-
 class MultiArmedBandit(MultiArmedBanditBase):
     """
     Pydantic model for an experiment.
     """
 
     arms: list[Arm]
-
+    notifications: Notifications
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -90,5 +89,6 @@ class MultiArmedBanditResponse(MultiArmedBanditBase):
 
     experiment_id: int
     arms: list[ArmResponse]
+    notifications: list[NotificationsResponse]
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, revalidate_instances="always")

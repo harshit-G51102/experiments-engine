@@ -1,10 +1,10 @@
 from typing import Sequence
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, select, delete
+from sqlalchemy import Boolean, ForeignKey, Integer, String, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ..models import Base
+from ..models import Base, NotificationsDB
 from .schemas import MultiArmedBandit
 
 
@@ -27,6 +27,19 @@ class MultiArmedBanditDB(Base):
     arms: Mapped[list["ArmDB"]] = relationship(
         "ArmDB", back_populates="experiment", lazy="joined"
     )
+
+    def to_dict(self) -> dict:
+        """
+        Convert the ORM object to a dictionary.
+        """
+        return {
+            "experiment_id": self.experiment_id,
+            "user_id": self.user_id,
+            "name": self.name,
+            "description": self.description,
+            "is_active": self.is_active,
+            "arms": [arm.to_dict() for arm in self.arms],
+        }
 
 
 class ArmDB(Base):
@@ -56,6 +69,22 @@ class ArmDB(Base):
         "MultiArmedBanditDB", back_populates="arms", lazy="joined"
     )
 
+    def to_dict(self) -> dict:
+        """
+        Convert the ORM object to a dictionary.
+        """
+        return {
+            "arm_id": self.arm_id,
+            "experiment_id": self.experiment_id,
+            "user_id": self.user_id,
+            "name": self.name,
+            "description": self.description,
+            "alpha_prior": self.alpha_prior,
+            "beta_prior": self.beta_prior,
+            "successes": self.successes,
+            "failures": self.failures,
+        }
+
 
 async def save_mab_to_db(
     experiment: MultiArmedBandit,
@@ -65,7 +94,10 @@ async def save_mab_to_db(
     """
     Save the experiment to the database.
     """
-    arms = [ArmDB(**arm.model_dump(), user_id=user_id) for arm in experiment.arms]
+    arms = [
+        ArmDB(**arm.model_dump(), user_id=user_id, successes=0, failures=0)
+        for arm in experiment.arms
+    ]
     experiment_db = MultiArmedBanditDB(
         name=experiment.name,
         description=experiment.description,
@@ -121,6 +153,13 @@ async def delete_mab_by_id(
     """
     Delete the experiment by id.
     """
+
+    await asession.execute(
+        delete(NotificationsDB)
+        .where(NotificationsDB.user_id == user_id)
+        .where(NotificationsDB.experiment_id == experiment_id)
+    )
+
     await asession.execute(
         delete(ArmDB)
         .where(ArmDB.user_id == user_id)
