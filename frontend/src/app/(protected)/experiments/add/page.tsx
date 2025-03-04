@@ -1,201 +1,169 @@
 "use client";
-import {
-  Description,
-  Field,
-  FieldGroup,
-  Fieldset,
-  Label,
-} from "@/components/catalyst/fieldset";
-import { Input } from "@/components/catalyst/input";
-import { Divider } from "@/components/catalyst/divider";
-import { Textarea } from "@/components/catalyst/textarea";
-import { Radio, RadioField, RadioGroup } from "@/components/catalyst/radio";
-import { useState } from "react";
+import React from "react";
+import { useState, useCallback } from "react";
+import { AllSteps } from "./components/addExperimentSteps";
+import AddBasicInfo from "./components/basicInfo";
+import { useExperiment } from "./components/AddExperimentContext";
 import { Button } from "@/components/catalyst/button";
-import { PlusIcon } from "@heroicons/react/16/solid";
-import { DividerWithTitle } from "@/components/Dividers";
-import { Heading } from "@/components/catalyst/heading";
-import { NewArm, NewMAB } from "../types";
-import { createMABExperiment } from "../api";
-import { a } from "framer-motion/client";
-import { useRouter } from "next/navigation";
+import {
+  PlusIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon,
+} from "@heroicons/react/20/solid";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { useAuth } from "@/utils/auth";
-
-const defaultArm: NewArm = {
-  name: "",
-  description: "",
-  alpha_prior: 1,
-  beta_prior: 1,
-};
+import { useRouter } from "next/navigation";
+import { createNewExperiment } from "../api";
+import { StepComponentProps, StepValidation } from "../types";
 
 export default function NewExperiment() {
-  const router = useRouter();
+  const [currentStep, setCurrentStep] = useState(0);
+  const { experimentState } = useExperiment();
+  const [stepValidations, setStepValidations] = useState<StepValidation[]>([]);
   const { token } = useAuth();
+  const router = useRouter();
 
-  const [methodType, setMethodType] = useState("MAB");
-  const [experimentName, setExperimentName] = useState<string>("");
-  const [experimentDescription, setExperimentDescription] =
-    useState<string>("");
-  const [arms, setArms] = useState<NewArm[]>([
-    { ...defaultArm },
-    { ...defaultArm },
-  ]);
+  type Methods = typeof AllSteps;
+  const [method, setMethod] = useState<keyof Methods>("mab");
+
+  const steps = AllSteps[method];
+
+  const nextStep = useCallback(() => {
+    const currentValidation = stepValidations[currentStep];
+    if (!currentValidation || !currentValidation.isValid) {
+      console.log("Cannot proceed. Please fill in all required fields.");
+      return;
+    }
+    setCurrentStep((prev) => Math.min(prev + 1, steps.length));
+  }, [currentStep, stepValidations, steps.length]);
+
+  const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
+
+  const EmptyComponent: React.FC<StepComponentProps> = () => null;
+  const CurrentStepComponent: React.ComponentType<StepComponentProps> =
+    currentStep === 0 ? EmptyComponent : steps[currentStep - 1].component;
 
   const onSubmit = () => {
-    const mab: NewMAB = {
-      name: experimentName,
-      description: experimentDescription,
-      arms: arms,
-    };
-
-    createMABExperiment({ mab, token })
-      .then((response) => {
-        console.log(response);
-        router.push(`/experiments`);
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    if (stepValidations.every((validation) => validation.isValid)) {
+      createNewExperiment({ experimentData: experimentState, token })
+        .then((response) => {
+          console.log("Experiment created", response);
+          router.push("/experiments");
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    } else {
+      console.log("Cannot proceed. Please check all steps for errors.");
+    }
   };
+  const handleStepValidation = useCallback(
+    (stepIndex: number, validation: StepValidation) => {
+      setStepValidations((prev) => {
+        const newValidations = [...prev];
+        newValidations[stepIndex] = validation;
+        return newValidations;
+      });
+    },
+    [],
+  );
 
   return (
     <>
-      <Heading className="mb-8">Create New Experiment</Heading>
-      <form action="/orders" method="POST">
-        <Fieldset aria-label="New Experiment">
-          <FieldGroup>
-            <Field>
-              <Label>Experiment Name</Label>
-              <Input
-                name="experiment-name"
-                placeholder="Give it a name you'll remember"
-                onChange={(e) => setExperimentName(e.target.value)}
-              />
-            </Field>
-            <Field>
-              <Label>Description</Label>
-              <Textarea
-                name="experiment-description"
-                placeholder="Why are you running this experiment? What do you wish to test?"
-                rows={3}
-                onChange={(e) => setExperimentDescription(e.target.value)}
-              />
-            </Field>
-          </FieldGroup>
-          <Divider className="mt-8" />
-          <RadioGroup
-            name="experiment-method"
-            defaultValue="MAB"
-            onChange={(value) => setMethodType(value)}
+      <div className="max-w-4xl mx-auto">
+        <div className="text-zinc-800 mb-4">
+          <Breadcrumb>
+            <BreadcrumbList>
+              {currentStep === 0 ? (
+                <BreadcrumbItem key="basic-details-current">
+                  <BreadcrumbPage className="font-semibold">
+                    Basic Details
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+              ) : (
+                <BreadcrumbItem key="basic-details-link">
+                  <BreadcrumbLink onClick={() => setCurrentStep(0)}>
+                    Basic Details
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              )}
+
+              <BreadcrumbSeparator key="first-separator">
+                <ChevronRightIcon className="h-5 w-5 text-zinc-800" />
+              </BreadcrumbSeparator>
+              {steps.slice(0, currentStep).map((step, index) => (
+                <React.Fragment key={`step-${index}`}>
+                  <BreadcrumbItem>
+                    {index < currentStep - 1 ? (
+                      <BreadcrumbLink onClick={() => setCurrentStep(index + 1)}>
+                        {step.name}
+                      </BreadcrumbLink>
+                    ) : (
+                      <BreadcrumbPage className="text-zinc-800 font-semibold">
+                        {step.name}
+                      </BreadcrumbPage>
+                    )}
+                  </BreadcrumbItem>
+                  {index < currentStep - 1 && (
+                    <BreadcrumbSeparator key={`separator-${index}`}>
+                      <ChevronRightIcon className="h-5 w-5 text-zinc-800" />
+                    </BreadcrumbSeparator>
+                  )}
+                </React.Fragment>
+              ))}
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+        {currentStep === 0 ? (
+          <AddBasicInfo
+            setMethodType={(method) => setMethod(method as keyof Methods)}
+            onValidate={(validation: StepValidation) =>
+              handleStepValidation(currentStep, validation)
+            }
+          />
+        ) : (
+          <CurrentStepComponent
+            onValidate={(validation: StepValidation) =>
+              handleStepValidation(currentStep, validation)
+            }
+          />
+        )}
+      </div>
+      <div className="flex justify-between max-w-4xl mx-auto mt-8">
+        <Button onClick={prevStep} disabled={currentStep === 0}>
+          <ChevronLeftIcon className="h-5 w-5" />
+          Previous
+        </Button>
+        {currentStep === steps.length ? (
+          <button
+            type="button"
+            className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={onSubmit}
+            disabled={
+              !stepValidations.every((validation) => validation.isValid)
+            }
           >
-            <Label>Select experiment type</Label>
-            <RadioField>
-              <Radio id="mab" value="MAB" />
-              <Label htmlFor="mab">Multi-armed Bandit</Label>
-              <Description>
-                A method that automatically converges to the best performing
-                arm.
-              </Description>
-            </RadioField>
-            <RadioField>
-              <Radio id="ab-test" value="AB" disabled />
-              <Label htmlFor="ab-test">[Coming soon] A/B Testing</Label>
-              <Description>
-                A method that compares two or more variants against each other.
-              </Description>
-            </RadioField>
-          </RadioGroup>
-          <Divider className="mt-8" />
+            <PlusIcon aria-hidden="true" className="-ml-0.5 mr-1.5 h-5 w-5" />
+            Create Experiment
+          </button>
+        ) : (
           <Button
-            className="mt-4"
-            onClick={() => setArms([...arms, { ...defaultArm }])}
+            className="px-4 py-2 bg-gray-200 rounded"
+            onClick={nextStep}
+            disabled={!stepValidations[currentStep]?.isValid}
           >
-            <PlusIcon className="w-4 h-4 mr-2" />
-            Add Arm
+            Next
+            <ChevronRightIcon className="h-5 w-5" />
           </Button>
-          {arms.map((arm, index) => (
-            <div key={index}>
-              <DividerWithTitle title={`Arm ${index + 1}`} />
-              <FieldGroup
-                key={index}
-                className="md:flex md:flex-row md:space-x-8 md:space-y-0 items-start"
-              >
-                <div className="basis-1/2">
-                  <Field className="flex flex-row ">
-                    <Label className="basis-1/4 mt-3">Name</Label>
-                    <Input
-                      className="basis-3/4"
-                      name={`arm-${index + 1}`}
-                      placeholder="Give the arm a searchable name"
-                      defaultValue={arm.name}
-                      onChange={(e) => {
-                        const newArms = [...arms];
-                        newArms[index].name = e.target.value;
-                        setArms(newArms);
-                      }}
-                    />
-                  </Field>
-                  <Field className="flex flex-row ">
-                    <Label className="basis-1/4 mt-3">Description</Label>
-                    <Textarea
-                      className="basis-3/4 "
-                      name={`arm-${index + 1}-description`}
-                      placeholder="What is the hypothesis being tested?"
-                      defaultValue={arm.description}
-                      rows={3}
-                      onChange={(e) => {
-                        const newArms = [...arms];
-                        newArms[index].description = e.target.value;
-                        setArms(newArms);
-                      }}
-                    />
-                  </Field>
-                </div>
-                <div className="bases-1/2 grow">
-                  <Field className="flex flex-row ">
-                    <Label className="basis-1/4 mt-3">Alpha prior</Label>
-                    <Input
-                      className="basis-3/4"
-                      name={`arm-${index + 1}-alpha`}
-                      placeholder="Enter an integer as the prior for the alpha parameter"
-                      defaultValue={arm.alpha_prior}
-                      onChange={(e) => {
-                        const newArms = [...arms];
-                        newArms[index].alpha_prior = parseInt(e.target.value);
-                        setArms(newArms);
-                      }}
-                    />
-                  </Field>
-                  <Field className="flex flex-row ">
-                    <Label className="basis-1/4 mt-3">Beta prior</Label>
-                    <Input
-                      className="basis-3/4"
-                      name={`arm-${index + 1}-beta`}
-                      placeholder="Enter an integer as the prior for the beta parameter"
-                      defaultValue={arm.beta_prior}
-                      onChange={(e) => {
-                        const newArms = [...arms];
-                        newArms[index].beta_prior = parseInt(e.target.value);
-                        setArms(newArms);
-                      }}
-                    />
-                  </Field>
-                </div>
-              </FieldGroup>
-            </div>
-          ))}
-          <div className="flex justify-center mt-10">
-            <button
-              type="button"
-              className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-              onClick={() => onSubmit()}
-            >
-              <PlusIcon aria-hidden="true" className="-ml-0.5 mr-1.5 h-5 w-5" />
-              Create Experiment
-            </button>
-          </div>
-        </Fieldset>
-      </form>
+        )}
+      </div>
     </>
   );
 }
