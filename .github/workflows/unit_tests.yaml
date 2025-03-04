@@ -18,7 +18,7 @@ env:
 jobs:
   container-job:
     runs-on: ubuntu-20.04
-    container: node:20-bookworm
+    container: node:20.7-bullseye
     services:
       postgres:
         image: postgres:16.4
