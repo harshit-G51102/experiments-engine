@@ -1,8 +1,8 @@
 """added notifications
 
-Revision ID: 0c16d30b16e8
+Revision ID: 779fe8bd88f0
 Revises: ac3411f604ea
-Create Date: 2025-03-03 20:57:11.547497
+Create Date: 2025-03-04 00:48:00.046081
 
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "0c16d30b16e8"
+revision: str = "779fe8bd88f0"
 down_revision: Union[str, None] = "ac3411f604ea"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -23,6 +23,7 @@ def upgrade() -> None:
     op.create_table(
         "notifications",
         sa.Column("notification_id", sa.Integer(), nullable=False),
+        sa.Column("experiment_id", sa.Integer(), nullable=False),
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column(
             "notification_type",
@@ -36,6 +37,14 @@ def upgrade() -> None:
         ),
         sa.Column("notification_value", sa.Integer(), nullable=False),
         sa.Column("is_active", sa.Boolean(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["experiment_id"],
+            ["mabs.experiment_id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["user_id"],
+            ["users.user_id"],
+        ),
         sa.PrimaryKeyConstraint("notification_id"),
     )
     op.alter_column(
