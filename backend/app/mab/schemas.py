@@ -1,4 +1,6 @@
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Self
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ..schemas import Notifications, NotificationsResponse
 
@@ -79,6 +81,12 @@ class MultiArmedBandit(MultiArmedBanditBase):
     arms: list[Arm]
     notifications: Notifications
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="after")
+    def arms_at_least_two(self) -> Self:
+        if len(self.arms) < 2:
+            raise ValueError("The experiment must have at least two arms.")
+        return self
 
 
 class MultiArmedBanditResponse(MultiArmedBanditBase):

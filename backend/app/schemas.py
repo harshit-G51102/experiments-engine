@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import Self
 
 from pydantic import BaseModel, ConfigDict, model_validator
-from pydantic.types import PositiveInt
+from pydantic.types import NonNegativeInt
 
 
 class EventType(StrEnum):
@@ -28,24 +28,28 @@ class Notifications(BaseModel):
     """
 
     onTrialCompletion: bool = False
-    numberOfTrials: PositiveInt | None
+    numberOfTrials: NonNegativeInt | None
     onDaysElapsed: bool = False
-    daysElapsed: PositiveInt | None
+    daysElapsed: NonNegativeInt | None
     onPercentBetter: bool = False
-    percentBetterThreshold: PositiveInt | None
+    percentBetterThreshold: NonNegativeInt | None
 
     @model_validator(mode="after")
     def validate_has_assocatiated_value(self) -> Self:
         """
         Validate that the required corresponding fields have been set.
         """
-        if self.onTrialCompletion and not self.numberOfTrials:
+        if self.onTrialCompletion and (
+            not self.numberOfTrials or self.numberOfTrials == 0
+        ):
             raise ValueError(
                 "numberOfTrials is required when onTrialCompletion is True"
             )
-        if self.onDaysElapsed and not self.daysElapsed:
+        if self.onDaysElapsed and (not self.daysElapsed or self.daysElapsed == 0):
             raise ValueError("daysElapsed is required when onDaysElapsed is True")
-        if self.onPercentBetter and not self.percentBetterThreshold:
+        if self.onPercentBetter and (
+            not self.percentBetterThreshold or self.percentBetterThreshold == 0
+        ):
             raise ValueError(
                 "percentBetterThreshold is required when onPercentBetter is True"
             )
@@ -62,5 +66,5 @@ class NotificationsResponse(BaseModel):
 
     notification_id: int
     notification_type: EventType
-    notification_value: PositiveInt
+    notification_value: NonNegativeInt
     is_active: bool

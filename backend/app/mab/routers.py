@@ -85,12 +85,21 @@ async def get_mab(
     Get details of experiment with the provided `experiment_id`.
     """
     experiment = await get_mab_by_id(experiment_id, user_db.user_id, asession)
+
     if experiment is None:
         raise HTTPException(
             status_code=404, detail=f"Experiment with id {experiment_id} not found"
         )
 
-    return MultiArmedBanditResponse.model_validate(experiment)
+    experiment_dict = experiment.to_dict()
+    experiment_dict["notifications"] = [
+        n.to_dict()
+        for n in await get_notifications_from_db(
+            experiment.experiment_id, experiment.user_id, asession
+        )
+    ]
+
+    return MultiArmedBanditResponse.model_validate(experiment_dict)
 
 
 @router.delete("/{experiment_id}", response_model=dict)

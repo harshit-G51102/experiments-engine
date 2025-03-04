@@ -16,14 +16,17 @@ const createNewExperiment = async ({
     newExperimentData = experimentData as MABExperimentState;
     endpoint = "/mab/";
   } else if (experimentData.methodType == "ab") {
-    newExperimentData = experimentData as MABExperimentState;
+    newExperimentData = experimentData as ABExperimentState;
     endpoint = "/ab/";
   } else {
     throw new Error("Invalid experiment type");
   }
 
   try {
-    const response = await api.post(endpoint, newExperimentData, {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { methodType, ...rest } = newExperimentData;
+    console.log(rest);
+    const response = await api.post(endpoint, rest, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
