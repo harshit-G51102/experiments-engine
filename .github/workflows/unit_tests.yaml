@@ -17,7 +17,7 @@ env:
   ADMIN_API_KEY: testkey123
 jobs:
   container-job:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     container: node:20.7-bullseye
     services:
       postgres:
@@ -49,7 +49,7 @@ jobs:
         uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
-          python-version: "3.12.3"
+          python-version: "3.12"
       - name: Install Python libraries
         run: |
           python -m pip install -r backend/requirements.txt
