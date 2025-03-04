@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from sqlalchemy import Boolean, Enum, ForeignKey, Integer, select
+from sqlalchemy import Boolean, Enum, ForeignKey, Integer, String, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -11,6 +11,36 @@ class Base(DeclarativeBase):
     """Base class for SQLAlchemy models"""
 
     pass
+
+
+class ExperimentBaseDB(Base):
+    """
+    Base model for experiments.
+    """
+
+    __tablename__ = "experiments_base"
+
+    experiment_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(length=150), nullable=False)
+    description: Mapped[str] = mapped_column(String(length=500), nullable=False)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.user_id"), nullable=False
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    exp_type: Mapped[str] = mapped_column(String(length=50), nullable=False)
+
+    __mapper_args__ = {
+        "polymorphic_identity": "experiment",
+        "polymorphic_on": "exp_type",
+    }
+
+    def __repr__(self) -> str:
+        """
+        String representation of the model
+        """
+        return f"<Experiment(name={self.name}, type={self.exp_type})>"
 
 
 class NotificationsDB(Base):
@@ -26,7 +56,7 @@ class NotificationsDB(Base):
         Integer, primary_key=True, nullable=False
     )
     experiment_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("mabs.experiment_id"), nullable=False
+        Integer, ForeignKey("experiments_base.experiment_id"), nullable=False
     )
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.user_id"), nullable=False

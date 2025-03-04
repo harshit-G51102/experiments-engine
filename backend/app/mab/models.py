@@ -1,14 +1,14 @@
 from typing import Sequence
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, delete, select
+from sqlalchemy import ForeignKey, Integer, String, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ..models import Base, NotificationsDB
+from ..models import Base, ExperimentBaseDB, NotificationsDB
 from .schemas import MultiArmedBandit
 
 
-class MultiArmedBanditDB(Base):
+class MultiArmedBanditDB(ExperimentBaseDB):
     """
     ORM for managing experiments.
     """
@@ -16,17 +16,13 @@ class MultiArmedBanditDB(Base):
     __tablename__ = "mabs"
 
     experiment_id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, nullable=False
+        ForeignKey("experiments_base.experiment_id"), primary_key=True, nullable=False
     )
-    user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.user_id"), nullable=False
-    )
-    name: Mapped[str] = mapped_column(String(length=150), nullable=False)
-    description: Mapped[str] = mapped_column(String(length=500), nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     arms: Mapped[list["ArmDB"]] = relationship(
         "ArmDB", back_populates="experiment", lazy="joined"
     )
+
+    __mapper_args__ = {"polymorphic_identity": "mabs"}
 
     def to_dict(self) -> dict:
         """
