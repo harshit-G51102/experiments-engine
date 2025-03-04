@@ -95,7 +95,8 @@ def update_arm_laplace(
 
     result = minimize(objective, current_mu, method="L-BFGS-B", hess="2-point")
     new_mu = result.x
-    new_covariance = result.hess_inv.todense()
+    inv_hess = result.hess_inv.todense()
+    new_covariance = (inv_hess + inv_hess.T) / 2
     return new_mu, new_covariance
 
 
@@ -143,9 +144,7 @@ def update_arm_params(
     reward : All rewards for the arm.
     context : All context vectors for the arm.
     """
-    if (prior_type == ArmPriors.NORMAL.value) and (
-        reward_type == RewardLikelihood.NORMAL.value
-    ):
+    if (prior_type == ArmPriors.NORMAL) and (reward_type == RewardLikelihood.NORMAL):
         return update_arm_normal(
             current_mu=np.array(arm.mu),
             current_covariance=np.array(arm.covariance),
@@ -153,8 +152,8 @@ def update_arm_params(
             context=np.array(context[-1]),
             sigma_llhood=1.0,  # TODO: need to implement likelihood stddev
         )
-    elif (prior_type == ArmPriors.NORMAL.value) and (
-        reward_type == RewardLikelihood.BERNOULLI.value
+    elif (prior_type == ArmPriors.NORMAL) and (
+        reward_type == RewardLikelihood.BERNOULLI
     ):
         return update_arm_laplace(
             current_mu=np.array(arm.mu),

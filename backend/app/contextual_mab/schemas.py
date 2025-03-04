@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import Self
 
-from ..exp_engine.schemas import ArmPriors, ContextType, allowed_combos_cmab
+from ..exp_engine.schemas import ArmPriors, ContextType
 from ..mab.schemas import (
     MABObservationBinary,
     MABObservationRealVal,
@@ -101,11 +101,6 @@ class ContextualBandit(MultiArmedBanditBase):
         if self.prior_type != ArmPriors.NORMAL:
             raise ValueError(
                 f"{self.prior_type.value} prior is not supported for contextual arms."
-            )
-        if (self.prior_type, self.reward_type) not in allowed_combos_cmab:
-            raise ValueError(
-                f"Prior and reward type combination {self.prior_type.value} and\
-                    {self.reward_type.value} is not supported."
             )
         return self
 

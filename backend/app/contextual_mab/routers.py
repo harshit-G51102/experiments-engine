@@ -131,12 +131,12 @@ async def get_arm(
     for i, (c_db, c) in enumerate(
         zip(sorted(experiment.contexts, key=lambda x: x.context_id), context)
     ):
-        if c_db.value_type == ContextType.BINARY and c not in [0, 1]:
+        if c_db.value_type == ContextType.BINARY.value and c not in [0, 1]:
             raise HTTPException(
                 status_code=400,
                 detail=f"Context {i} must be binary.",
             )
-        elif c_db.value_type == ContextType.REAL_VALUED and not isinstance(
+        elif c_db.value_type == ContextType.REAL_VALUED.value and not isinstance(
             c, (int, float)
         ):
             raise HTTPException(
@@ -175,7 +175,7 @@ async def update_arm(
             status_code=400,
             detail="Number of contexts provided does not match the num contexts.",
         )
-    experiment_data = ContextualBandit.model_validate(experiment)
+    experiment_data = ContextualBanditResponse.model_validate(experiment)
 
     # Get the arm
     arms = [a for a in experiment_data.arms if a.arm_id == arm_id]
@@ -188,12 +188,12 @@ async def update_arm(
         for i, (c_db, c) in enumerate(
             zip(sorted(experiment.contexts, key=lambda x: x.context_id), context)
         ):
-            if c_db.value_type == ContextType.BINARY and c not in [0, 1]:
+            if c_db.value_type == ContextType.BINARY.value and c not in [0, 1]:
                 raise HTTPException(
                     status_code=400,
                     detail=f"Context {i} must be binary.",
                 )
-            elif c_db.value_type == ContextType.REAL_VALUED and not isinstance(
+            elif c_db.value_type == ContextType.REAL_VALUED.value and not isinstance(
                 c, (int, float)
             ):
                 raise HTTPException(
@@ -209,16 +209,20 @@ async def update_arm(
             asession=asession,
         )
         rewards = np.array([obs.reward for obs in all_obs] + [reward])
-        contexts = np.array([obs.context for obs in all_obs] + [context])
+        contexts = np.array([obs.context_val for obs in all_obs] + [context])
 
         # Update the arm
-        arm.mu, arm.covariance = update_arm_params(
+        mu, covariance = update_arm_params(
             arm=arm,
             prior_type=experiment_data.prior_type,
             reward_type=experiment_data.reward_type,
             context=contexts,
             reward=rewards,
         )
+
+        # Update the arm in the database
+        arm.mu = mu.tolist()
+        arm.covariance = covariance.tolist()
         await asession.commit()
 
         # Save the observation
