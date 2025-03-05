@@ -1,8 +1,8 @@
 import numpy as np
 from numpy.random import beta, normal
 
-from ..exp_engine.schemas import ArmPriors, Outcome, RewardLikelihood
 from ..mab.schemas import ArmResponse, MultiArmedBanditResponse
+from ..schemas import ArmPriors, Outcome, RewardLikelihood
 
 
 def sample_beta_binomial(alphas: np.ndarray, betas: np.ndarray) -> int:
@@ -31,7 +31,9 @@ def sample_normal(mus: np.ndarray, sigmas: np.ndarray) -> int:
     return samples.argmax()
 
 
-def update_arm_beta_binomial(alpha: int, beta: int, reward: Outcome) -> tuple[int, int]:
+def update_arm_beta_binomial(
+    alpha: float, beta: float, reward: Outcome
+) -> tuple[float, float]:
     """
     Update the alpha and beta parameters of the Beta distribution.
 
@@ -44,7 +46,7 @@ def update_arm_beta_binomial(alpha: int, beta: int, reward: Outcome) -> tuple[in
     reward : Outcome
         The reward of the arm.
     """
-    if reward == Outcome.SUCCESS:
+    if reward == Outcome.SUCCESS.value:
         return alpha + 1, beta
     else:
         return alpha, beta + 1
@@ -113,12 +115,17 @@ def update_arm_params(
     reward_type: The likelihood distribution of the reward.
     reward: The reward of the arm.
     """
-    if (prior_type == ArmPriors.BETA.value) and (
-        reward_type == RewardLikelihood.BERNOULLI.value
+    if (
+        (prior_type == ArmPriors.BETA.value)
+        and (reward_type == RewardLikelihood.BERNOULLI.value)
+        and (arm.alpha and arm.beta)
     ):
-        return update_arm_beta_binomial(alpha=arm.alpha, beta=arm.beta, reward=reward)
-    elif (prior_type == ArmPriors.NORMAL.value) and (
-        reward_type == RewardLikelihood.NORMAL.value
+        outcome = Outcome(reward)
+        return update_arm_beta_binomial(alpha=arm.alpha, beta=arm.beta, reward=outcome)
+    elif (
+        (prior_type == ArmPriors.NORMAL.value)
+        and (reward_type == RewardLikelihood.NORMAL.value)
+        and (arm.mu and arm.sigma)
     ):
         return update_arm_normal(
             current_mu=arm.mu,

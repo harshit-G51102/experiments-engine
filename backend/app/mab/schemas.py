@@ -3,13 +3,14 @@ from typing import Optional, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from ..exp_engine.schemas import (
+from ..schemas import (
     ArmPriors,
+    Notifications,
+    NotificationsResponse,
     Outcome,
     RewardLikelihood,
     allowed_combos_mab,
 )
-from ..schemas import Notifications, NotificationsResponse
 
 
 class Arm(BaseModel):

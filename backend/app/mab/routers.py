@@ -6,9 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth.dependencies import authenticate_key, get_current_user
 from ..database import get_async_session
-from ..exp_engine.schemas import RewardLikelihood
 from ..models import get_notifications_from_db, save_notifications_to_db
-from ..schemas import NotificationsResponse
+from ..schemas import NotificationsResponse, RewardLikelihood
 from ..users.models import UserDB
 from .models import (
     delete_mab_by_id,
