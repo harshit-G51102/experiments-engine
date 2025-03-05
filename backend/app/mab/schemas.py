@@ -7,7 +7,6 @@ from ..schemas import (
     ArmPriors,
     Notifications,
     NotificationsResponse,
-    Outcome,
     RewardLikelihood,
     allowed_combos_mab,
 )
@@ -187,49 +186,21 @@ class MultiArmedBanditSample(MultiArmedBanditBase):
     arms: list[ArmResponse]
 
 
-class MABObservationBase(BaseModel):
+class MABObservation(BaseModel):
     """
     Pydantic model for an observation of the experiment.
     """
 
     experiment_id: int
     arm_id: int
+    reward: float
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class MABObservationBinary(MABObservationBase):
+class MABObservationResponse(MABObservation):
     """
     Pydantic model for binary observations of the experiment.
-    """
-
-    reward: Outcome
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class MABObservationRealVal(MABObservationBase):
-    """
-    Pydantic model for real-valued observations of the experiment.
-    """
-
-    reward: float
-    model_config = ConfigDict(from_attributes=True)
-
-
-class MABObservationBinaryResponse(MABObservationBinary):
-    """
-    Pydantic model for an response for observation creation
-    """
-
-    observation_id: int
-    observed_datetime_utc: datetime
-    model_config = ConfigDict(from_attributes=True)
-
-
-class MABObservationRealValResponse(MABObservationRealVal):
-    """
-    Pydantic model for an response for observation creation
     """
 
     observation_id: int

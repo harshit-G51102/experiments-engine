@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.optimize import minimize
 
-from ..exp_engine.schemas import ArmPriors, ContextLinkFunctions, RewardLikelihood
+from ..schemas import ArmPriors, ContextLinkFunctions, RewardLikelihood
 from .schemas import ContextualArmResponse, ContextualBanditResponse
 
 
@@ -100,7 +100,7 @@ def update_arm_laplace(
     return new_mu, new_covariance
 
 
-def choose_arm(experiment: ContextualBanditResponse, context: np.ndarray) -> int:
+def choose_arm(experiment: ContextualBanditResponse, context: list[float]) -> int:
     """
     Choose the arm with the highest probability.
 
@@ -109,19 +109,15 @@ def choose_arm(experiment: ContextualBanditResponse, context: np.ndarray) -> int
     experiment : The experiment object.
     context : The context vector.
     """
-    # TODO need to implement updating for bernoulli updates
-    if experiment.reward_type == RewardLikelihood.BERNOULLI:
-        raise NotImplementedError("Bernoulli updates are not implemented yet")
-
     link_function = (
         ContextLinkFunctions.NONE
         if experiment.reward_type == RewardLikelihood.NORMAL
         else ContextLinkFunctions.LOGISTIC
     )
     return sample_normal(
-        mus=[arm.mu for arm in experiment.arms],
-        covariances=[arm.covariance for arm in experiment.arms],
-        context=context,
+        mus=[np.array(arm.mu) for arm in experiment.arms],
+        covariances=[np.array(arm.covariance) for arm in experiment.arms],
+        context=np.array(context),
         link_function=link_function,
     )
 
@@ -130,8 +126,8 @@ def update_arm_params(
     arm: ContextualArmResponse,
     prior_type: ArmPriors,
     reward_type: RewardLikelihood,
-    reward: np.ndarray,
-    context: np.ndarray,
+    reward: list,
+    context: list,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Update the arm parameters.

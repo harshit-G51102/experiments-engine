@@ -17,7 +17,7 @@ from ..models import (
     NotificationsDB,
     ObservationsBaseDB,
 )
-from .schemas import MABObservationBinary, MABObservationRealVal, MultiArmedBandit
+from .schemas import MABObservation, MultiArmedBandit
 
 
 class MultiArmedBanditDB(ExperimentBaseDB):
@@ -34,9 +34,6 @@ class MultiArmedBanditDB(ExperimentBaseDB):
     )
     arms: Mapped[list["MABArmDB"]] = relationship(
         "MABArmDB", back_populates="experiment", lazy="joined"
-    )
-    observations: Mapped[list["MABObservationDB"]] = relationship(
-        "MABObservationDB", back_populates="experiment", lazy="joined"
     )
 
     __mapper_args__ = {"polymorphic_identity": "mabs"}
@@ -198,7 +195,6 @@ async def get_mab_by_id(
     """
     Get the experiment by id.
     """
-    # return await asession.get(MultiArmedBanditDB, experiment_id)
     result = await asession.execute(
         select(MultiArmedBanditDB)
         .where(MultiArmedBanditDB.user_id == user_id)
@@ -253,7 +249,7 @@ async def delete_mab_by_id(
 
 
 async def save_observation_to_db(
-    observation: MABObservationRealVal | MABObservationBinary,
+    observation: MABObservation,
     user_id: int,
     asession: AsyncSession,
 ) -> MABObservationDB:
@@ -262,8 +258,8 @@ async def save_observation_to_db(
     """
     observation_db = MABObservationDB(
         **observation.model_dump(),
-        observed_datetime_utc=datetime.now(timezone.utc),
         user_id=user_id,
+        observed_datetime_utc=datetime.now(timezone.utc),
     )
 
     asession.add(observation_db)

@@ -1,11 +1,13 @@
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-from typing_extensions import Self
+from datetime import datetime
+from typing import Self
 
-from ..exp_engine.schemas import ArmPriors, ContextType
-from ..mab.schemas import (
-    MABObservationBinary,
-    MABObservationRealVal,
-    MultiArmedBanditBase,
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from ..schemas import (
+    ArmPriors,
+    ContextType,
+    NotificationsResponse,
+    RewardLikelihood,
 )
 
 
@@ -37,6 +39,16 @@ class ContextResponse(Context):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ContextInput(Context):
+    """
+    Pydantic model for a context input
+    """
+
+    context_id: int
+    context_value: float
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ContextualArm(BaseModel):
     """
     Pydantic model for a contextual arm of the experiment.
@@ -51,8 +63,17 @@ class ContextualArm(BaseModel):
         examples=["This is a description of the arm."],
     )
 
-    mu_init: float = Field(default=0.0)
-    sigma_init: float = Field(default=1.0)
+    mu_init: float = Field(
+        default=0.0,
+        examples=[0.0, 1.2, 5.7],
+        description="Mean parameter for Normal prior",
+    )
+
+    sigma_init: float = Field(
+        default=1.0,
+        examples=[1.0, 0.5, 2.0],
+        description="Standard deviation parameter for Normal prior",
+    )
 
     @model_validator(mode="after")
     def check_values(self) -> Self:
@@ -79,22 +100,47 @@ class ContextualArmResponse(ContextualArm):
     model_config = ConfigDict(from_attributes=True)
 
 
-class ContextualBandit(MultiArmedBanditBase):
+class ContextualBanditBase(BaseModel):
     """
-    Pydantic model for a contextual experiment.
+    Pydantic model for a contextual experiment - Base model.
+    Note: Do not use this model directly. Use ContextualBandit instead.
     """
+
+    name: str = Field(
+        max_length=150,
+        examples=["Experiment 1"],
+    )
+
+    description: str = Field(
+        max_length=500,
+        examples=["This is a description of the experiment."],
+    )
+
+    reward_type: RewardLikelihood = Field(
+        description="The type of reward we observe from the experiment.",
+        default=RewardLikelihood.BERNOULLI,
+    )
 
     prior_type: ArmPriors = Field(
         description="The type of prior distribution for the arms.",
         default=ArmPriors.NORMAL,
     )
-    arms: list[ContextualArm]
-    contexts: list[Context]
+
+    is_active: bool = True
 
     model_config = ConfigDict(from_attributes=True)
 
+
+class ContextualBandit(ContextualBanditBase):
+    """
+    Pydantic model for a contextual experiment.
+    """
+
+    arms: list[ContextualArm]
+    contexts: list[Context]
+
     @model_validator(mode="after")
-    def check_experiment_inputs(self) -> "ContextualBandit":
+    def check_prior_type(self) -> "ContextualBandit":
         """
         Check if the context of the experiment is valid.
         """
@@ -104,8 +150,10 @@ class ContextualBandit(MultiArmedBanditBase):
             )
         return self
 
+    model_config = ConfigDict(from_attributes=True)
 
-class ContextualBanditResponse(ContextualBandit):
+
+class ContextualBanditResponse(ContextualBanditBase):
     """
     Pydantic model for an response for contextual experiment creation.
     Returns the id of the experiment, the arms and the contexts
@@ -114,43 +162,42 @@ class ContextualBanditResponse(ContextualBandit):
     experiment_id: int
     arms: list[ContextualArmResponse]
     contexts: list[ContextResponse]
+    notifications: list[NotificationsResponse]
+    created_datetime_utc: datetime
+    n_trials: int
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class CMABObservationBinary(MABObservationBinary):
+class ContextualBanditSample(ContextualBanditBase):
     """
-    Pydantic model for a binary-valued observation of the experiment.
+    Pydantic model for a contextual experiment sample.
     """
 
+    experiment_id: int
+    arms: list[ContextualArmResponse]
+    contexts: list[ContextResponse]
+
+
+class CMABObservation(BaseModel):
+    """
+    Pydantic model for a contextual observation of the experiment.
+    """
+
+    arm_id: int
+    context_id: int
+    reward: float
     context: list[float]
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class CMABObservationRealVal(MABObservationRealVal):
+class CMABObservationResponse(CMABObservation):
     """
-    Pydantic model for a binary-valued observation of the experiment.
-    """
-
-    context: list[float]
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class CMABObservationBinaryResponse(CMABObservationBinary):
-    """
-    Pydantic model for an response for binary observation creation
+    Pydantic model for an response for contextual observation creation
     """
 
     observation_id: int
-    model_config = ConfigDict(from_attributes=True)
+    observed_datetime_utc: datetime
 
-
-class CMABObservationRealValResponse(CMABObservationRealVal):
-    """
-    Pydantic model for an response for real-valued observation creation
-    """
-
-    observation_id: int
     model_config = ConfigDict(from_attributes=True)

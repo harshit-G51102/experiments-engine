@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..auth.dependencies import authenticate_key, get_current_user
 from ..database import get_async_session
 from ..models import get_notifications_from_db, save_notifications_to_db
-from ..schemas import NotificationsResponse, RewardLikelihood
+from ..schemas import NotificationsResponse, Outcome, RewardLikelihood
 from ..users.models import UserDB
 from .models import (
     delete_mab_by_id,
@@ -20,10 +20,8 @@ from .models import (
 from .sampling_utils import choose_arm, update_arm_params
 from .schemas import (
     ArmResponse,
-    MABObservationBinary,
-    MABObservationBinaryResponse,
-    MABObservationRealVal,
-    MABObservationRealValResponse,
+    MABObservation,
+    MABObservationResponse,
     MultiArmedBandit,
     MultiArmedBanditResponse,
     MultiArmedBanditSample,
@@ -85,10 +83,7 @@ async def get_mabs(
             )
         )
 
-    return [
-        MultiArmedBanditResponse.model_validate(experiment)
-        for experiment in all_experiments
-    ]
+    return all_experiments
 
 
 @router.get("/{experiment_id}", response_model=MultiArmedBanditResponse)
@@ -187,19 +182,14 @@ async def update_arm(
 
     # Update arm based on reward type
     if experiment_data.reward_type == RewardLikelihood.BERNOULLI:
-        reward = MABObservationBinary.model_validate(
-            dict(experiment_id=experiment_id, arm_id=arm_id, reward=outcome)
-        )
+        Outcome(outcome)  # Check if reward is 0 or 1
         arm.alpha, arm.beta = update_arm_params(
-            arm, experiment.prior_type, experiment.reward_type, reward.reward
+            arm, experiment.prior_type, experiment.reward_type, outcome
         )
 
     elif experiment_data.reward_type == RewardLikelihood.NORMAL:
-        reward = MABObservationRealVal.model_validate(
-            dict(experiment_id=experiment_id, arm_id=arm_id, reward=outcome)
-        )
         arm.mu, arm.sigma = update_arm_params(
-            arm, experiment.prior_type, experiment.reward_type, reward.reward
+            arm, experiment.prior_type, experiment.reward_type, outcome
         )
 
     else:
@@ -209,20 +199,25 @@ async def update_arm(
         )
 
     await asession.commit()
-    await save_observation_to_db(reward, user_db.user_id, asession)
+    observation = MABObservation(
+        experiment_id=experiment.experiment_id,
+        arm_id=arm.arm_id,
+        reward=outcome,
+    )
+    await save_observation_to_db(observation, user_db.user_id, asession)
 
     return ArmResponse.model_validate(arm)
 
 
 @router.get(
     "/{experiment_id}/outcomes",
-    response_model=list[MABObservationRealValResponse | MABObservationBinaryResponse],
+    response_model=list[MABObservationResponse],
 )
 async def get_outcomes(
     experiment_id: int,
     user_db: UserDB = Depends(authenticate_key),
     asession: AsyncSession = Depends(get_async_session),
-) -> list[MABObservationRealValResponse | MABObservationBinaryResponse]:
+) -> list[MABObservationResponse]:
     """
     Get the outcomes for the experiment.
     """
@@ -237,11 +232,5 @@ async def get_outcomes(
         user_id=user_db.user_id,
         asession=asession,
     )
-    return [
-        (
-            MABObservationRealValResponse.model_validate(reward)
-            if experiment.reward_type == RewardLikelihood.NORMAL.value
-            else MABObservationBinaryResponse.model_validate(reward)
-        )
-        for reward in rewards
-    ]
+
+    return [MABObservationResponse.model_validate(reward) for reward in rewards]
