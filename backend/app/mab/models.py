@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Sequence
 
 from sqlalchemy import ForeignKey, Integer, String, delete, select
@@ -16,7 +17,9 @@ class MultiArmedBanditDB(ExperimentBaseDB):
     __tablename__ = "mabs"
 
     experiment_id: Mapped[int] = mapped_column(
-        ForeignKey("experiments_base.experiment_id"), primary_key=True, nullable=False
+        ForeignKey("experiments_base.experiment_id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
     )
     arms: Mapped[list["ArmDB"]] = relationship(
         "ArmDB", back_populates="experiment", lazy="joined"
@@ -33,7 +36,9 @@ class MultiArmedBanditDB(ExperimentBaseDB):
             "user_id": self.user_id,
             "name": self.name,
             "description": self.description,
+            "created_datetime_utc": self.created_datetime_utc,
             "is_active": self.is_active,
+            "n_trials": self.n_trials,
             "arms": [arm.to_dict() for arm in self.arms],
         }
 
@@ -99,6 +104,8 @@ async def save_mab_to_db(
         description=experiment.description,
         user_id=user_id,
         is_active=experiment.is_active,
+        created_datetime_utc=datetime.now(timezone.utc),
+        n_trials=0,
         arms=arms,
     )
 
@@ -162,9 +169,9 @@ async def delete_mab_by_id(
         .where(ArmDB.experiment_id == experiment_id)
     )
     await asession.execute(
-        delete(MultiArmedBanditDB)
-        .where(MultiArmedBanditDB.user_id == user_id)
-        .where(MultiArmedBanditDB.experiment_id == experiment_id)
+        delete(ExperimentBaseDB)
+        .where(ExperimentBaseDB.user_id == user_id)
+        .where(ExperimentBaseDB.experiment_id == experiment_id)
     )
     await asession.commit()
     return None

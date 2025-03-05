@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import Sequence
 
-from sqlalchemy import Boolean, Enum, ForeignKey, Integer, String, select
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -30,6 +31,10 @@ class ExperimentBaseDB(Base):
     )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     exp_type: Mapped[str] = mapped_column(String(length=50), nullable=False)
+    created_datetime_utc: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    n_trials: Mapped[int] = mapped_column(Integer, nullable=False)
 
     __mapper_args__ = {
         "polymorphic_identity": "experiment",
@@ -91,24 +96,27 @@ async def save_notifications_to_db(
     Save notifications to the database
     """
     notification_records = []
+
     if notifications.onTrialCompletion:
         notification_row = NotificationsDB(
             experiment_id=experiment_id,
             user_id=user_id,
             notification_type=EventType.TRIALS_COMPLETED,
-            notification_value=notifications.onTrialCompletion,
+            notification_value=notifications.numberOfTrials,
             is_active=True,
         )
         notification_records.append(notification_row)
+
     if notifications.onDaysElapsed:
         notification_row = NotificationsDB(
             experiment_id=experiment_id,
             user_id=user_id,
-            notification_type=EventType.TRIALS_COMPLETED,
+            notification_type=EventType.DAYS_ELAPSED,
             notification_value=notifications.daysElapsed,
             is_active=True,
         )
         notification_records.append(notification_row)
+
     if notifications.onPercentBetter:
         notification_row = NotificationsDB(
             experiment_id=experiment_id,

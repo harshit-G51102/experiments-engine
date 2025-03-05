@@ -50,6 +50,15 @@ def admin_token(client: TestClient) -> str:
     return token
 
 
+@fixture()
+def clean_mabs(db_session: Session) -> Generator:
+    yield
+    db_session.query(NotificationsDB).delete()
+    db_session.query(ArmDB).delete()
+    db_session.query(MultiArmedBanditDB).delete()
+    db_session.commit()
+
+
 class TestMab:
     @fixture
     def create_mab_payload(self, request: FixtureRequest) -> dict:
@@ -66,14 +75,6 @@ class TestMab:
             return payload
         else:
             raise ValueError("Invalid parameter")
-
-    @fixture()
-    def clean_mabs(self, db_session: Session) -> Generator:
-        yield
-        db_session.query(NotificationsDB).delete()
-        db_session.query(ArmDB).delete()
-        db_session.query(MultiArmedBanditDB).delete()
-        db_session.commit()
 
     @mark.parametrize(
         "create_mab_payload, expected_response",
@@ -216,6 +217,7 @@ class TestNotifications:
         admin_token: str,
         create_mab_payload: dict,
         expected_response: int,
+        clean_mabs: None,
     ) -> None:
         response = client.post(
             "/mab",

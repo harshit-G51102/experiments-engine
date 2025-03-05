@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -84,6 +85,9 @@ class MultiArmedBandit(MultiArmedBanditBase):
 
     @model_validator(mode="after")
     def arms_at_least_two(self) -> Self:
+        """
+        Validate that the experiment has at least two arms.
+        """
         if len(self.arms) < 2:
             raise ValueError("The experiment must have at least two arms.")
         return self
@@ -98,5 +102,6 @@ class MultiArmedBanditResponse(MultiArmedBanditBase):
     experiment_id: int
     arms: list[ArmResponse]
     notifications: list[NotificationsResponse]
-
+    created_datetime_utc: datetime
+    n_trials: int
     model_config = ConfigDict(from_attributes=True, revalidate_instances="always")
