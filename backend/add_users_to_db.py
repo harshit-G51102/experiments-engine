@@ -2,6 +2,10 @@ import asyncio
 import os
 from datetime import datetime, timezone
 
+from redis import asyncio as aioredis
+from sqlalchemy import select
+from sqlalchemy.exc import MultipleResultsFound, NoResultFound
+
 from app.config import REDIS_HOST
 from app.database import get_session
 from app.users.models import UserDB
@@ -11,9 +15,6 @@ from app.utils import (
     get_password_salted_hash,
     setup_logger,
 )
-from redis import asyncio as aioredis
-from sqlalchemy import select
-from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 
 logger = setup_logger()
 
@@ -75,8 +76,7 @@ if __name__ == "__main__":
 
     except MultipleResultsFound:
         logger.error(
-            "Multiple users with username "
-            f"{user_db.username} found in local database."
+            f"Multiple users with username {user_db.username} found in local database."
         )
 
     db_session.commit()

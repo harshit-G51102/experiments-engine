@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from redis import asyncio as aioredis
 
-from . import auth, mab, contextual_mab
+from . import auth, contextual_mab, mab
 from .config import REDIS_HOST
 from .users.routers import (
     router as users_router,

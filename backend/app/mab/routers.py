@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..auth.dependencies import authenticate_key, get_current_user
 from ..database import get_async_session
 from ..exp_engine.schemas import RewardLikelihood
+from ..models import get_notifications_from_db, save_notifications_to_db
+from ..schemas import NotificationsResponse
 from ..users.models import UserDB
 from .models import (
     delete_mab_by_id,
@@ -39,9 +41,18 @@ async def create_mab(
     """
     Create a new experiment.
     """
-    response = await save_mab_to_db(experiment, user_db.user_id, asession)
-    # return response
-    return MultiArmedBanditResponse.model_validate(response)
+    mab = await save_mab_to_db(experiment, user_db.user_id, asession)
+    notifications = await save_notifications_to_db(
+        experiment_id=mab.experiment_id,
+        user_id=user_db.user_id,
+        notifications=experiment.notifications,
+        asession=asession,
+    )
+
+    mab_dict = mab.to_dict()
+    mab_dict["notifications"] = [n.to_dict() for n in notifications]
+
+    return MultiArmedBanditResponse.model_validate(mab_dict)
 
 
 @router.get("/", response_model=list[MultiArmedBanditResponse])
@@ -53,9 +64,30 @@ async def get_mabs(
     Get details of all experiments.
     """
     experiments = await get_all_mabs(user_db.user_id, asession)
+
+    all_experiments = []
+    for exp in experiments:
+        exp_dict = exp.to_dict()
+        exp_dict["notifications"] = [
+            n.to_dict()
+            for n in await get_notifications_from_db(
+                exp.experiment_id, exp.user_id, asession
+            )
+        ]
+        all_experiments.append(
+            MultiArmedBanditResponse.model_validate(
+                {
+                    **exp_dict,
+                    "notifications": [
+                        NotificationsResponse(**n) for n in exp_dict["notifications"]
+                    ],
+                }
+            )
+        )
+
     return [
         MultiArmedBanditResponse.model_validate(experiment)
-        for experiment in experiments
+        for experiment in all_experiments
     ]
 
 
@@ -64,17 +96,26 @@ async def get_mab(
     experiment_id: int,
     user_db: Annotated[UserDB, Depends(get_current_user)],
     asession: AsyncSession = Depends(get_async_session),
-) -> MultiArmedBanditResponse | HTTPException:
+) -> MultiArmedBanditResponse:
     """
     Get details of experiment with the provided `experiment_id`.
     """
     experiment = await get_mab_by_id(experiment_id, user_db.user_id, asession)
+
     if experiment is None:
-        return HTTPException(
+        raise HTTPException(
             status_code=404, detail=f"Experiment with id {experiment_id} not found"
         )
 
-    return MultiArmedBanditResponse.model_validate(experiment)
+    experiment_dict = experiment.to_dict()
+    experiment_dict["notifications"] = [
+        n.to_dict()
+        for n in await get_notifications_from_db(
+            experiment.experiment_id, experiment.user_id, asession
+        )
+    ]
+
+    return MultiArmedBanditResponse.model_validate(experiment_dict)
 
 
 @router.delete("/{experiment_id}", response_model=dict)
@@ -89,13 +130,13 @@ async def delete_mab(
     try:
         experiment = await get_mab_by_id(experiment_id, user_db.user_id, asession)
         if experiment is None:
-            return HTTPException(
+            raise HTTPException(
                 status_code=404, detail=f"Experiment with id {experiment_id} not found"
             )
         await delete_mab_by_id(experiment_id, user_db.user_id, asession)
         return {"message": f"Experiment with id {experiment_id} deleted successfully."}
     except Exception as e:
-        return HTTPException(status_code=500, detail=f"Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {e}") from e
 
 
 @router.get("/{experiment_id}/draw", response_model=ArmResponse)
@@ -103,13 +144,13 @@ async def get_arm(
     experiment_id: int,
     user_db: UserDB = Depends(authenticate_key),
     asession: AsyncSession = Depends(get_async_session),
-) -> ArmResponse | HTTPException:
+) -> ArmResponse:
     """
     Get which arm to pull next for provided experiment.
     """
     experiment = await get_mab_by_id(experiment_id, user_db.user_id, asession)
     if experiment is None:
-        return HTTPException(
+        raise HTTPException(
             status_code=404, detail=f"Experiment with id {experiment_id} not found"
         )
     experiment_data = MultiArmedBanditResponse.model_validate(experiment)
@@ -124,20 +165,21 @@ async def update_arm(
     outcome: float,
     user_db: UserDB = Depends(authenticate_key),
     asession: AsyncSession = Depends(get_async_session),
-) -> ArmResponse | HTTPException:
+) -> ArmResponse:
     """
     Update the arm with the provided `arm_id` for the given
     `experiment_id` based on the `outcome`.
     """
     experiment = await get_mab_by_id(experiment_id, user_db.user_id, asession)
     if experiment is None:
-        return HTTPException(
+        raise HTTPException(
             status_code=404, detail=f"Experiment with id {experiment_id} not found"
         )
+    experiment.n_trials += 1
 
     arms = [a for a in experiment.arms if a.arm_id == arm_id]
     if not arms:
-        return HTTPException(status_code=404, detail=f"Arm with id {arm_id} not found")
+        raise HTTPException(status_code=404, detail=f"Arm with id {arm_id} not found")
     else:
         arm = arms[0]
         reward = None

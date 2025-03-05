@@ -44,7 +44,6 @@ const BetaLineChart = ({
       : [Math.round(Number(value) * 100) / 100, name];
   };
 
-  console.log(posteriors, priors);
   return (
     <AreaChart width={700} height={400} data={data}>
       <Tooltip />
