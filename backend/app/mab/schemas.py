@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Self
+from typing import Optional, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -27,10 +27,22 @@ class Arm(BaseModel):
     )
 
     # prior variables
-    alpha: float | None = Field(default=None)
-    beta: float | None = Field(default=None)
-    mu: float | None = Field(default=None)
-    sigma: float | None = Field(default=None)
+    alpha: Optional[float] = Field(
+        default=None, examples=[None, 1.0], description="Alpha parameter for Beta prior"
+    )
+    beta: Optional[float] = Field(
+        default=None, examples=[None, 1.0], description="Beta parameter for Beta prior"
+    )
+    mu: Optional[float] = Field(
+        default=None,
+        examples=[None, 0.0],
+        description="Mean parameter for Normal prior",
+    )
+    sigma: Optional[float] = Field(
+        default=None,
+        examples=[None, 1.0],
+        description="Standard deviation parameter for Normal prior",
+    )
 
     @model_validator(mode="after")
     def check_values(self) -> Self:
@@ -55,18 +67,6 @@ class ArmResponse(Arm):
     """
 
     arm_id: int
-
-    successes: int = Field(
-        description="The number of successes for the arm.",
-        examples=[0, 10, 100],
-        default=0,
-    )
-    failures: int = Field(
-        description="The number of failures for the arm.",
-        examples=[0, 10, 100],
-        default=0,
-    )
-
     model_config = ConfigDict(
         from_attributes=True,
     )
@@ -110,47 +110,6 @@ class MultiArmedBandit(MultiArmedBanditBase):
     arms: list[Arm]
     notifications: Notifications
 
-    @model_validator(mode="before")
-    def check_arm_and_experiment_reward_type(cls, values: dict) -> dict:
-        """
-        Check if the arm reward type is same as the experiment reward type.
-        """
-        reward_type = values.get("reward_type")
-        prior_type = values.get("prior_type")
-        arms = values.get("arms")
-
-        if arms is None:
-            raise ValueError("At least one arm is required.")
-
-        prior_params = {
-            ArmPriors.BETA.value: ("alpha", "beta"),
-            ArmPriors.NORMAL.value: ("mu", "sigma"),
-        }
-
-        if (prior_type, reward_type) not in allowed_combos_mab:
-            raise ValueError(
-                f"Prior and reward type combination {prior_type} and\
-                    {reward_type} is not supported."
-            )
-
-        for arm in arms:
-            if prior_type in prior_params:
-                missing_params = []
-                for param in prior_params[prior_type]:
-                    if param not in arm.keys():
-                        missing_params.append(param)
-                    elif arm[param] is None:
-                        missing_params.append(param)
-
-                if missing_params:
-                    raise ValueError(
-                        f"{prior_type} prior requires {', '.join(missing_params)}."
-                    )
-
-        return values
-
-    model_config = ConfigDict(from_attributes=True)
-
     @model_validator(mode="after")
     def arms_at_least_two(self) -> Self:
         """
@@ -159,6 +118,49 @@ class MultiArmedBandit(MultiArmedBanditBase):
         if len(self.arms) < 2:
             raise ValueError("The experiment must have at least two arms.")
         return self
+
+    @model_validator(mode="after")
+    def check_prior_reward_type_combo(self) -> Self:
+        """
+        Validate that the prior and reward type combination is allowed.
+        """
+
+        if (self.prior_type, self.reward_type) not in allowed_combos_mab:
+            raise ValueError("Prior and reward type combo not supported.")
+        return self
+
+    @model_validator(mode="after")
+    def check_arm_missing_params(self) -> Self:
+        """
+        Check if the arm reward type is same as the experiment reward type.
+        """
+        prior_type = self.prior_type
+        arms = self.arms
+
+        prior_params = {
+            ArmPriors.BETA: ("alpha", "beta"),
+            ArmPriors.NORMAL: ("mu", "sigma"),
+        }
+
+        for arm in arms:
+            arm_dict = arm.model_dump()
+            if prior_type in prior_params:
+                missing_params = []
+                for param in prior_params[prior_type]:
+                    if param not in arm_dict.keys():
+                        missing_params.append(param)
+                    elif arm_dict[param] is None:
+                        missing_params.append(param)
+
+                if missing_params:
+                    raise ValueError(
+                        f"{
+                        prior_type.value} prior requires {
+                        ', '.join(missing_params)}."
+                    )
+        return self
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MultiArmedBanditResponse(MultiArmedBanditBase):
@@ -173,6 +175,15 @@ class MultiArmedBanditResponse(MultiArmedBanditBase):
     created_datetime_utc: datetime
     n_trials: int
     model_config = ConfigDict(from_attributes=True, revalidate_instances="always")
+
+
+class MultiArmedBanditSample(MultiArmedBanditBase):
+    """
+    Pydantic model for an experiment sample.
+    """
+
+    experiment_id: int
+    arms: list[ArmResponse]
 
 
 class MABObservationBase(BaseModel):
@@ -202,7 +213,6 @@ class MABObservationRealVal(MABObservationBase):
     """
 
     reward: float
-
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -212,8 +222,7 @@ class MABObservationBinaryResponse(MABObservationBinary):
     """
 
     observation_id: int
-    obs_datetime_utc: datetime
-
+    observed_datetime_utc: datetime
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -223,6 +232,6 @@ class MABObservationRealValResponse(MABObservationRealVal):
     """
 
     observation_id: int
-    obs_datetime_utc: datetime
+    observed_datetime_utc: datetime
 
     model_config = ConfigDict(from_attributes=True)

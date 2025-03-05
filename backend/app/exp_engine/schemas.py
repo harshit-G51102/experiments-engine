@@ -93,6 +93,6 @@ class ContextLinkFunctions(Enum):
 
 
 allowed_combos_mab = [
-    (ArmPriors.BETA.value, RewardLikelihood.BERNOULLI.value),
-    (ArmPriors.NORMAL.value, RewardLikelihood.NORMAL.value),
+    (ArmPriors.BETA, RewardLikelihood.BERNOULLI),
+    (ArmPriors.NORMAL, RewardLikelihood.NORMAL),
 ]

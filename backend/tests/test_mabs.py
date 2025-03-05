@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from pytest import FixtureRequest, fixture, mark
 from sqlalchemy.orm import Session
 
-from backend.app.mab.models import ArmDB, MultiArmedBanditDB
+from backend.app.mab.models import MABArmDB, MultiArmedBanditDB
 from backend.app.models import NotificationsDB
 
 base_mab_payload = {
@@ -54,7 +54,7 @@ def admin_token(client: TestClient) -> str:
 def clean_mabs(db_session: Session) -> Generator:
     yield
     db_session.query(NotificationsDB).delete()
-    db_session.query(ArmDB).delete()
+    db_session.query(MABArmDB).delete()
     db_session.query(MultiArmedBanditDB).delete()
     db_session.commit()
 
