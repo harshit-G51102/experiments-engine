@@ -36,7 +36,7 @@ class UserRetrieve(BaseModel):
     username: str
     experiments_quota: Optional[int]
     api_key_first_characters: str
-    api_key_updated_datetime_utc: Optional[datetime]
+    api_key_updated_datetime_utc: datetime
     created_datetime_utc: datetime
     updated_datetime_utc: datetime
 

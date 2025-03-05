@@ -55,10 +55,8 @@ async def authenticate_key(
     try:
         user_db = await get_user_by_api_key(token, asession)
         return user_db
-    except UserNotFoundError:
-        # Fall back to JWT token authentication if api key is not valid.
-        user_db = await get_current_user(token)
-        return user_db
+    except UserNotFoundError as e:
+        raise HTTPException(status_code=403, detail="Invalid API key") from e
 
 
 async def authenticate_credentials(
