@@ -36,6 +36,10 @@ class MultiArmedBanditDB(ExperimentBaseDB):
         "MABArmDB", back_populates="experiment", lazy="joined"
     )
 
+    observations: Mapped[list["MABObservationDB"]] = relationship(
+        "MABObservationDB", back_populates="experiment", lazy="joined"
+    )
+
     __mapper_args__ = {"polymorphic_identity": "mabs"}
 
     def to_dict(self) -> dict:

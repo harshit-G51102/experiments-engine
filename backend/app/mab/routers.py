@@ -135,7 +135,7 @@ async def delete_mab(
 
 
 @router.get("/{experiment_id}/draw", response_model=ArmResponse)
-async def get_arm(
+async def draw_arm(
     experiment_id: int,
     user_db: UserDB = Depends(authenticate_key),
     asession: AsyncSession = Depends(get_async_session),

@@ -26,6 +26,7 @@ from .schemas import (
     ContextualArmResponse,
     ContextualBandit,
     ContextualBanditResponse,
+    ContextualBanditSample,
 )
 
 router = APIRouter(prefix="/contextual_mab", tags=["Contextual Bandits"])
@@ -135,8 +136,8 @@ async def delete_contextual_mab(
         raise HTTPException(status_code=500, detail=f"Error: {e}") from e
 
 
-@router.get("/{experiment_id}/draw", response_model=ContextualArmResponse)
-async def get_arm(
+@router.post("/{experiment_id}/draw", response_model=ContextualArmResponse)
+async def draw_arm(
     experiment_id: int,
     context: List[ContextInput],
     user_db: UserDB = Depends(authenticate_key),
@@ -167,7 +168,7 @@ async def get_arm(
         if c_exp.value_type == ContextType.BINARY.value:
             Outcome(c_input.context_value)
 
-    experiment_data = ContextualBanditResponse.model_validate(experiment)
+    experiment_data = ContextualBanditSample.model_validate(experiment)
     chosen_arm = choose_arm(
         experiment_data,
         [c.context_value for c in sorted(context, key=lambda x: x.context_id)],
@@ -211,7 +212,7 @@ async def update_arm(
         if c_exp.value_type == ContextType.BINARY.value:
             Outcome(c_input.context_value)
 
-    experiment_data = ContextualBanditResponse.model_validate(experiment)
+    experiment_data = ContextualBanditSample.model_validate(experiment)
 
     # Get the arm
     arms = [a for a in experiment_data.arms if a.arm_id == arm_id]
@@ -251,9 +252,13 @@ async def update_arm(
 
         # Save the observation
         observation = CMABObservation.model_validate(
-            arm_id=arm_id,
-            reward=reward,
-            context=sorted(context, key=lambda x: x.context_id),
+            dict(
+                arm_id=arm_id,
+                reward=reward,
+                context_val=[
+                    c.context_value for c in sorted(context, key=lambda x: x.context_id)
+                ],
+            )
         )
         await save_contextual_obs_to_db(
             observation=observation,

@@ -46,6 +46,10 @@ class ContextualBanditDB(ExperimentBaseDB):
         "ContextDB", back_populates="experiment", lazy="joined"
     )
 
+    observations: Mapped[list["ContextualObservationDB"]] = relationship(
+        "ContextualObservationDB", back_populates="experiment", lazy="joined"
+    )
+
     __mapper_args__ = {"polymorphic_identity": "contextual_mabs"}
 
     def to_dict(self) -> dict:
@@ -335,7 +339,7 @@ async def save_contextual_obs_to_db(
         experiment_id=experiment_id,
         user_id=user_id,
         reward=observation.reward,
-        context_val=observation.context,
+        context_val=observation.context_val,
         observed_datetime_utc=datetime.now(timezone.utc),
     )
 

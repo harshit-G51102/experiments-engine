@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from ..schemas import (
     ArmPriors,
     ContextType,
+    Notifications,
     NotificationsResponse,
     RewardLikelihood,
 )
@@ -39,7 +40,7 @@ class ContextResponse(Context):
     model_config = ConfigDict(from_attributes=True)
 
 
-class ContextInput(Context):
+class ContextInput(BaseModel):
     """
     Pydantic model for a context input
     """
@@ -138,6 +139,16 @@ class ContextualBandit(ContextualBanditBase):
 
     arms: list[ContextualArm]
     contexts: list[Context]
+    notifications: Notifications
+
+    @model_validator(mode="after")
+    def arms_at_least_two(self) -> Self:
+        """
+        Validate that the experiment has at least two arms.
+        """
+        if len(self.arms) < 2:
+            raise ValueError("The experiment must have at least two arms.")
+        return self
 
     @model_validator(mode="after")
     def check_prior_type(self) -> "ContextualBandit":
@@ -185,9 +196,8 @@ class CMABObservation(BaseModel):
     """
 
     arm_id: int
-    context_id: int
     reward: float
-    context: list[float]
+    context_val: list[float]
 
     model_config = ConfigDict(from_attributes=True)
 
