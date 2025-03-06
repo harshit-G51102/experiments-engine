@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from backend.app.mab.models import MABArmDB, MultiArmedBanditDB
 from backend.app.models import NotificationsDB
 
-base_mab_payload = {
+base_beta_binom_payload = {
     "name": "Test",
     "description": "Test description",
     "prior_type": "beta",
@@ -38,6 +38,14 @@ base_mab_payload = {
     },
 }
 
+base_normal_payload = base_beta_binom_payload.copy()
+base_normal_payload["prior_type"] = "normal"
+base_normal_payload["reward_type"] = "real-valued"
+base_normal_payload["arms"] = [
+    {"name": "arm 1", "description": "arm 1 description", "mu": 2, "sigma": 3},
+    {"name": "arm 2", "description": "arm 2 description", "mu": 3, "sigma": 7},
+]
+
 
 @fixture
 def admin_token(client: TestClient) -> str:
@@ -64,23 +72,66 @@ def clean_mabs(db_session: Session) -> Generator:
 class TestMab:
     @fixture
     def create_mab_payload(self, request: FixtureRequest) -> dict:
-        payload: dict = copy.deepcopy(base_mab_payload)
-        payload["arms"] = list(payload["arms"])
+        payload_beta_binom: dict = copy.deepcopy(base_beta_binom_payload)
+        payload_beta_binom["arms"] = list(payload_beta_binom["arms"])
 
-        if request.param == "base":
-            return payload
+        payload_normal: dict = copy.deepcopy(base_normal_payload)
+        payload_normal["arms"] = list(payload_normal["arms"])
+
+        if request.param == "base_beta_binom":
+            return payload_beta_binom
+        if request.param == "base_normal":
+            return payload_normal
         if request.param == "one_arm":
-            payload["arms"].pop()
-            return payload
+            payload_beta_binom["arms"].pop()
+            return payload_beta_binom
         if request.param == "no_notifications":
-            payload["notifications"]["onTrialCompletion"] = False
-            return payload
+            payload_beta_binom["notifications"]["onTrialCompletion"] = False
+            return payload_beta_binom
+        if request.param == "invalid_prior":
+            payload_beta_binom["prior_type"] = "invalid"
+            return payload_beta_binom
+        if request.param == "invalid_reward":
+            payload_beta_binom["reward_type"] = "invalid"
+            return payload_beta_binom
+        if request.param == "invalid_alpha":
+            payload_beta_binom["arms"][0]["alpha"] = -1
+            return payload_beta_binom
+        if request.param == "invalid_beta":
+            payload_beta_binom["arms"][0]["beta"] = -1
+            return payload_beta_binom
+        if request.param == "invalid_combo_1":
+            payload_beta_binom["prior_type"] = "normal"
+            return payload_beta_binom
+        if request.param == "invalid_combo_2":
+            payload_beta_binom["reward_type"] = "continuous"
+            return payload_beta_binom
+        if request.param == "incorrect_params":
+            payload_beta_binom["arms"][0].pop("alpha")
+            return payload_beta_binom
+        if request.param == "invalid_sigma":
+            payload_normal["arms"][0]["sigma"] = 0.0
+            return payload_normal
+
         else:
             raise ValueError("Invalid parameter")
 
     @mark.parametrize(
         "create_mab_payload, expected_response",
-        [("base", 200), ("one_arm", 422), ("no_notifications", 200)],
+        [
+            ("base_beta_binom", 200),
+            ("base_normal", 200),
+            ("one_arm", 422),
+            ("no_notifications", 200),
+            ("invalid_prior", 422),
+            ("invalid_reward", 422),
+            ("invalid_alpha", 422),
+            ("invalid_beta", 422),
+            ("invalid_combo_1", 422),
+            ("invalid_combo_2", 422),
+            ("incorrect_params", 422),
+            ("invalid_sigma", 422),
+        ],
         indirect=["create_mab_payload"],
     )
     def test_create_mab(
@@ -108,7 +159,7 @@ class TestMab:
         for _ in range(n_mabs):
             response = client.post(
                 "/mab",
-                json=base_mab_payload,
+                json=base_beta_binom_payload,
                 headers={"Authorization": f"Bearer {admin_token}"},
             )
             mabs.append(response.json())
@@ -165,7 +216,7 @@ class TestMab:
 class TestNotifications:
     @fixture()
     def create_mab_payload(self, request: FixtureRequest) -> dict:
-        payload: dict = copy.deepcopy(base_mab_payload)
+        payload: dict = copy.deepcopy(base_beta_binom_payload)
         payload["arms"] = list(payload["arms"])
 
         match request.param:
