@@ -13,18 +13,20 @@ from backend.create_notifications import process_notifications
 base_mab_payload = {
     "name": "Test",
     "description": "Test description",
+    "prior_type": "beta",
+    "reward_type": "binary",
     "arms": [
         {
             "name": "arm 1",
             "description": "arm 1 description",
-            "alpha_prior": 5,
-            "beta_prior": 1,
+            "alpha": 5,
+            "beta": 1,
         },
         {
             "name": "arm 2",
             "description": "arm 2 description",
-            "alpha_prior": 1,
-            "beta_prior": 4,
+            "alpha": 1,
+            "beta": 4,
         },
     ],
     "notifications": {
@@ -174,7 +176,7 @@ class TestNotificationsJob:
         for mab in create_mabs_trials_run:
             for _ in range(n_trials):
                 response = client.put(
-                    f"/mab/{mab['experiment_id']}/{mab['arms'][0]['arm_id']}/success",
+                    f"/mab/{mab['experiment_id']}/{mab['arms'][0]['arm_id']}/{1}",
                     headers={"Authorization": f"Bearer {api_key}"},
                 )
                 assert response.status_code == 200
