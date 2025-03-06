@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from typing import AsyncGenerator, Generator
 
@@ -94,3 +95,16 @@ def user2(client: TestClient, db_session: Session) -> Generator:
     result = db_session.execute(stmt)
     user = result.scalar_one()
     yield user.user_id
+
+
+@pytest.fixture(scope="session")
+def admin_token(client: TestClient) -> str:
+    response = client.post(
+        "/login",
+        data={
+            "username": os.environ.get("ADMIN_USERNAME", ""),
+            "password": os.environ.get("ADMIN_PASSWORD", ""),
+        },
+    )
+    token = response.json()["access_token"]
+    return token

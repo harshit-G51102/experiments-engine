@@ -99,7 +99,7 @@ async def get_contextual_mab(
         experiment_id, user_db.user_id, asession
     )
     if experiment is None:
-        return HTTPException(
+        raise HTTPException(
             status_code=404, detail=f"Experiment with id {experiment_id} not found"
         )
 

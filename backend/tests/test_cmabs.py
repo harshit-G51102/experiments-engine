@@ -6,26 +6,42 @@ from fastapi.testclient import TestClient
 from pytest import FixtureRequest, fixture, mark
 from sqlalchemy.orm import Session
 
-from backend.app.mab.models import MABArmDB, MultiArmedBanditDB
+from backend.app.contextual_mab.models import (
+    ContextDB,
+    ContextualArmDB,
+    ContextualBanditDB,
+)
 from backend.app.models import NotificationsDB
 
-base_beta_binom_payload = {
+base_normal_payload = {
     "name": "Test",
     "description": "Test description",
-    "prior_type": "beta",
-    "reward_type": "binary",
+    "prior_type": "normal",
+    "reward_type": "real-valued",
     "arms": [
         {
             "name": "arm 1",
             "description": "arm 1 description",
-            "alpha": 5,
-            "beta": 1,
+            "mu_init": 0,
+            "sigma_init": 1,
         },
         {
             "name": "arm 2",
             "description": "arm 2 description",
-            "alpha": 1,
-            "beta": 4,
+            "mu_init": 0,
+            "sigma_init": 1,
+        },
+    ],
+    "contexts": [
+        {
+            "name": "Context 1",
+            "description": "context 1 description",
+            "value_type": "binary",
+        },
+        {
+            "name": "Context 2",
+            "description": "context 2 description",
+            "value_type": "real-valued",
         },
     ],
     "notifications": {
@@ -38,173 +54,156 @@ base_beta_binom_payload = {
     },
 }
 
-base_normal_payload = base_beta_binom_payload.copy()
-base_normal_payload["prior_type"] = "normal"
-base_normal_payload["reward_type"] = "real-valued"
-base_normal_payload["arms"] = [
-    {"name": "arm 1", "description": "arm 1 description", "mu": 2, "sigma": 3},
-    {"name": "arm 2", "description": "arm 2 description", "mu": 3, "sigma": 7},
-]
+base_binary_normal_payload = base_normal_payload.copy()
+base_binary_normal_payload["reward_type"] = "binary"
 
 
 @fixture
-def clean_mabs(db_session: Session) -> Generator:
+def clean_cmabs(db_session: Session) -> Generator:
     yield
     db_session.query(NotificationsDB).delete()
-    db_session.query(MABArmDB).delete()
-    db_session.query(MultiArmedBanditDB).delete()
+    db_session.query(ContextualArmDB).delete()
+    db_session.query(ContextDB).delete()
+    db_session.query(ContextualBanditDB).delete()
     db_session.commit()
 
 
 class TestMab:
     @fixture
-    def create_mab_payload(self, request: FixtureRequest) -> dict:
-        payload_beta_binom: dict = copy.deepcopy(base_beta_binom_payload)
-        payload_beta_binom["arms"] = list(payload_beta_binom["arms"])
-
+    def create_cmab_payload(self, request: FixtureRequest) -> dict:
         payload_normal: dict = copy.deepcopy(base_normal_payload)
         payload_normal["arms"] = list(payload_normal["arms"])
+        payload_normal["contexts"] = list(payload_normal["contexts"])
 
-        if request.param == "base_beta_binom":
-            return payload_beta_binom
+        payload_binary_normal: dict = copy.deepcopy(base_binary_normal_payload)
+        payload_binary_normal["arms"] = list(payload_binary_normal["arms"])
+        payload_binary_normal["contexts"] = list(payload_binary_normal["contexts"])
+
         if request.param == "base_normal":
             return payload_normal
+        if request.param == "base_binary_normal":
+            return payload_binary_normal
         if request.param == "one_arm":
-            payload_beta_binom["arms"].pop()
-            return payload_beta_binom
+            payload_normal["arms"].pop()
+            return payload_normal
         if request.param == "no_notifications":
-            payload_beta_binom["notifications"]["onTrialCompletion"] = False
-            return payload_beta_binom
+            payload_normal["notifications"]["onTrialCompletion"] = False
+            return payload_normal
         if request.param == "invalid_prior":
-            payload_beta_binom["prior_type"] = "invalid"
-            return payload_beta_binom
+            payload_normal["prior_type"] = "beta"
+            return payload_normal
         if request.param == "invalid_reward":
-            payload_beta_binom["reward_type"] = "invalid"
-            return payload_beta_binom
-        if request.param == "invalid_alpha":
-            payload_beta_binom["arms"][0]["alpha"] = -1
-            return payload_beta_binom
-        if request.param == "invalid_beta":
-            payload_beta_binom["arms"][0]["beta"] = -1
-            return payload_beta_binom
-        if request.param == "invalid_combo_1":
-            payload_beta_binom["prior_type"] = "normal"
-            return payload_beta_binom
-        if request.param == "invalid_combo_2":
-            payload_beta_binom["reward_type"] = "continuous"
-            return payload_beta_binom
-        if request.param == "incorrect_params":
-            payload_beta_binom["arms"][0].pop("alpha")
-            return payload_beta_binom
+            payload_normal["reward_type"] = "invalid"
+            return payload_normal
         if request.param == "invalid_sigma":
-            payload_normal["arms"][0]["sigma"] = 0.0
+            payload_normal["arms"][0]["sigma_init"] = 0
             return payload_normal
 
         else:
             raise ValueError("Invalid parameter")
 
     @mark.parametrize(
-        "create_mab_payload, expected_response",
+        "create_cmab_payload, expected_response",
         [
-            ("base_beta_binom", 200),
             ("base_normal", 200),
+            ("base_binary_normal", 200),
             ("one_arm", 422),
             ("no_notifications", 200),
             ("invalid_prior", 422),
             ("invalid_reward", 422),
-            ("invalid_alpha", 422),
-            ("invalid_beta", 422),
-            ("invalid_combo_1", 422),
-            ("invalid_combo_2", 422),
-            ("incorrect_params", 422),
             ("invalid_sigma", 422),
         ],
-        indirect=["create_mab_payload"],
+        indirect=["create_cmab_payload"],
     )
-    def test_create_mab(
+    def test_create_cmab(
         self,
-        create_mab_payload: dict,
+        create_cmab_payload: dict,
         client: TestClient,
         expected_response: int,
         admin_token: str,
-        clean_mabs: None,
+        clean_cmabs: None,
     ) -> None:
         response = client.post(
-            "/mab",
-            json=create_mab_payload,
+            "/contextual_mab",
+            json=create_cmab_payload,
             headers={"Authorization": f"Bearer {admin_token}"},
         )
 
         assert response.status_code == expected_response
 
     @fixture
-    def create_mabs(
+    def create_cmabs(
         self, client: TestClient, admin_token: str, request: FixtureRequest
     ) -> Generator:
-        mabs = []
-        n_mabs = request.param if hasattr(request, "param") else 1
-        for _ in range(n_mabs):
+        cmabs = []
+        n_cmabs = request.param if hasattr(request, "param") else 1
+        for _ in range(n_cmabs):
             response = client.post(
-                "/mab",
-                json=base_beta_binom_payload,
+                "/contextual_mab",
+                json=base_normal_payload,
                 headers={"Authorization": f"Bearer {admin_token}"},
             )
-            mabs.append(response.json())
-        yield mabs
-        for mab in mabs:
+            cmabs.append(response.json())
+        yield cmabs
+        for cmab in cmabs:
             client.delete(
-                f"/mab/{mab['experiment_id']}",
+                f"/contextual_mab/{cmab['experiment_id']}",
                 headers={"Authorization": f"Bearer {admin_token}"},
             )
 
     @mark.parametrize(
-        "create_mabs, n_expected",
+        "create_cmabs, n_expected",
         [(0, 0), (2, 2), (5, 5)],
-        indirect=["create_mabs"],
+        indirect=["create_cmabs"],
     )
-    def test_get_all_mabs(
-        self, client: TestClient, admin_token: str, n_expected: int, create_mabs: list
+    def test_get_all_cmabs(
+        self, client: TestClient, admin_token: str, n_expected: int, create_cmabs: list
     ) -> None:
         response = client.get(
-            "/mab", headers={"Authorization": f"Bearer {admin_token}"}
+            "/contextual_mab", headers={"Authorization": f"Bearer {admin_token}"}
         )
         assert response.status_code == 200
         assert len(response.json()) == n_expected
 
     @mark.parametrize(
-        "create_mabs, expected_response",
+        "create_cmabs, expected_response",
         [(0, 404), (2, 200)],
-        indirect=["create_mabs"],
+        indirect=["create_cmabs"],
     )
-    def test_get_mab(
+    def test_get_cmab(
         self,
         client: TestClient,
         admin_token: str,
-        create_mabs: list,
+        create_cmabs: list,
         expected_response: int,
     ) -> None:
-        id = create_mabs[0]["experiment_id"] if create_mabs else 999
+        id = create_cmabs[0]["experiment_id"] if create_cmabs else 999
 
         response = client.get(
-            f"/mab/{id}", headers={"Authorization": f"Bearer {admin_token}"}
+            f"/contextual_mab/{id}", headers={"Authorization": f"Bearer {admin_token}"}
         )
         assert response.status_code == expected_response
 
-    def test_draw_arm(self, client: TestClient, create_mabs: list) -> None:
-        id = create_mabs[0]["experiment_id"]
+    def test_draw_arm(self, client: TestClient, create_cmabs: list) -> None:
+        id = create_cmabs[0]["experiment_id"]
         api_key = os.environ.get("ADMIN_API_KEY", "")
-        response = client.get(
-            f"/mab/{id}/draw",
+        response = client.post(
+            f"/contextual_mab/{id}/draw",
             headers={"Authorization": f"Bearer {api_key}"},
+            json=[
+                {"context_id": 1, "context_value": 0},
+                {"context_id": 2, "context_value": 0.5},
+            ],
         )
         assert response.status_code == 200
 
 
 class TestNotifications:
     @fixture()
-    def create_mab_payload(self, request: FixtureRequest) -> dict:
-        payload: dict = copy.deepcopy(base_beta_binom_payload)
+    def create_cmab_payload(self, request: FixtureRequest) -> dict:
+        payload: dict = copy.deepcopy(base_normal_payload)
         payload["arms"] = list(payload["arms"])
+        payload["contexts"] = list(payload["contexts"])
 
         match request.param:
             case "base":
@@ -237,7 +236,7 @@ class TestNotifications:
         return payload
 
     @mark.parametrize(
-        "create_mab_payload, expected_response",
+        "create_cmab_payload, expected_response",
         [
             ("base", 200),
             ("daysElapsed_only", 200),
@@ -249,19 +248,19 @@ class TestNotifications:
             ("trialCompletion_missing", 422),
             ("percentBetter_missing", 422),
         ],
-        indirect=["create_mab_payload"],
+        indirect=["create_cmab_payload"],
     )
     def test_notifications(
         self,
         client: TestClient,
         admin_token: str,
-        create_mab_payload: dict,
+        create_cmab_payload: dict,
         expected_response: int,
-        clean_mabs: None,
+        clean_cmabs: None,
     ) -> None:
         response = client.post(
-            "/mab",
-            json=create_mab_payload,
+            "/contextual_mab",
+            json=create_cmab_payload,
             headers={"Authorization": f"Bearer {admin_token}"},
         )
 
