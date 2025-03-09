@@ -181,7 +181,7 @@ class TestNotificationsJob:
         for mab in create_mabs_trials_run:
             for _ in range(n_trials):
                 response = client.put(
-                    f"/mab/{mab['experiment_id']}/{mab['arms'][0]['arm_id']}/success",
+                    f"/mab/{mab['experiment_id']}/{mab['arms'][0]['arm_id']}/{1}",
                     headers={"Authorization": f"Bearer {api_key}"},
                 )
                 assert response.status_code == 200

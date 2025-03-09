@@ -16,9 +16,7 @@ guard-%:
 	@if [ -z "$$${*}" ]; then echo "ERROR: environment variable $* not set" && exit 1; fi
 
 run-tests:
-	@make setup-test-containers
 	python -m pytest -rPQ -m "not slow" tests
-	@make teardown-test-containers
 
 ## Helper targets
 setup-test-containers: setup-redis-test setup-test-db
