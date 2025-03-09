@@ -82,7 +82,6 @@ async def get_mabs(
                 }
             )
         )
-
     return all_experiments
 
 
@@ -174,10 +173,12 @@ async def update_arm(
     experiment.n_trials += 1
     experiment_data = MultiArmedBanditSample.model_validate(experiment)
 
+
     # Get and validate arm
     arms = [a for a in experiment_data.arms if a.arm_id == arm_id]
     if not arms:
         raise HTTPException(status_code=404, detail=f"Arm with id {arm_id} not found")
+        
     arm = arms[0]
 
     # Update arm based on reward type

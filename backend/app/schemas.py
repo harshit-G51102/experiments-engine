@@ -2,6 +2,7 @@ from enum import Enum, StrEnum
 from typing import Any, Self
 
 import numpy as np
+
 from pydantic import BaseModel, ConfigDict, model_validator
 from pydantic.types import NonNegativeInt
 
@@ -66,7 +67,6 @@ class Outcome(float, Enum):
     """
     Enum for the outcome of a trial.
     """
-
     SUCCESS = 1
     FAILURE = 0
 

@@ -14,6 +14,7 @@ base_beta_binom_payload = {
     "description": "Test description",
     "prior_type": "beta",
     "reward_type": "binary",
+
     "arms": [
         {
             "name": "arm 1",
@@ -45,7 +46,6 @@ base_normal_payload["arms"] = [
     {"name": "arm 1", "description": "arm 1 description", "mu": 2, "sigma": 3},
     {"name": "arm 2", "description": "arm 2 description", "mu": 3, "sigma": 7},
 ]
-
 
 @fixture
 def admin_token(client: TestClient) -> str:
@@ -112,7 +112,6 @@ class TestMab:
         if request.param == "invalid_sigma":
             payload_normal["arms"][0]["sigma"] = 0.0
             return payload_normal
-
         else:
             raise ValueError("Invalid parameter")
 
@@ -160,6 +159,7 @@ class TestMab:
             response = client.post(
                 "/mab",
                 json=base_beta_binom_payload,
+
                 headers={"Authorization": f"Bearer {admin_token}"},
             )
             mabs.append(response.json())
@@ -217,6 +217,7 @@ class TestNotifications:
     @fixture()
     def create_mab_payload(self, request: FixtureRequest) -> dict:
         payload: dict = copy.deepcopy(base_beta_binom_payload)
+
         payload["arms"] = list(payload["arms"])
 
         match request.param:

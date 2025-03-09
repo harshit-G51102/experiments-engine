@@ -160,7 +160,6 @@ class MultiArmedBandit(MultiArmedBanditBase):
                     )
         return self
 
-    model_config = ConfigDict(from_attributes=True)
 
 
 class MultiArmedBanditResponse(MultiArmedBanditBase):
@@ -175,7 +174,7 @@ class MultiArmedBanditResponse(MultiArmedBanditBase):
     created_datetime_utc: datetime
     n_trials: int
     model_config = ConfigDict(from_attributes=True, revalidate_instances="always")
-
+  
 
 class MultiArmedBanditSample(MultiArmedBanditBase):
     """
@@ -207,3 +206,4 @@ class MABObservationResponse(MABObservation):
     observed_datetime_utc: datetime
 
     model_config = ConfigDict(from_attributes=True)
+

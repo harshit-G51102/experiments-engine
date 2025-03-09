@@ -17,6 +17,7 @@ base_mab_payload = {
     "description": "Test description",
     "prior_type": "beta",
     "reward_type": "binary",
+
     "arms": [
         {
             "name": "arm 1",
