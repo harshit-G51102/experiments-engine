@@ -184,12 +184,12 @@ async def update_arm(
     if experiment_data.reward_type == RewardLikelihood.BERNOULLI:
         Outcome(outcome)  # Check if reward is 0 or 1
         arm.alpha, arm.beta = update_arm_params(
-            arm, experiment.prior_type, experiment.reward_type, outcome
+            arm, experiment_data.prior_type, experiment_data.reward_type, outcome
         )
 
     elif experiment_data.reward_type == RewardLikelihood.NORMAL:
         arm.mu, arm.sigma = update_arm_params(
-            arm, experiment.prior_type, experiment.reward_type, outcome
+            arm, experiment_data.prior_type, experiment_data.reward_type, outcome
         )
 
     else:
@@ -223,7 +223,7 @@ async def get_outcomes(
     """
     experiment = await get_mab_by_id(experiment_id, user_db.user_id, asession)
     if not experiment:
-        return HTTPException(
+        raise HTTPException(
             status_code=404, detail=f"Experiment with id {experiment_id} not found"
         )
     experiment.n_trials += 1

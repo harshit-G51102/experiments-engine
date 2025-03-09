@@ -2,7 +2,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 from ..schemas import ArmPriors, ContextLinkFunctions, RewardLikelihood
-from .schemas import ContextualArmResponse, ContextualBanditResponse
+from .schemas import ContextualArmResponse, ContextualBanditSample
 
 
 def sample_normal(
@@ -28,7 +28,7 @@ def sample_normal(
         ]
     ).reshape(-1, len(context))
     probs = link_function(samples @ context)
-    return probs.argmax()
+    return int(probs.argmax())
 
 
 def update_arm_normal(
@@ -100,7 +100,7 @@ def update_arm_laplace(
     return new_mu, new_covariance
 
 
-def choose_arm(experiment: ContextualBanditResponse, context: list[float]) -> int:
+def choose_arm(experiment: ContextualBanditSample, context: list[float]) -> int:
     """
     Choose the arm with the highest probability.
 
