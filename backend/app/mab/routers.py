@@ -82,7 +82,6 @@ async def get_mabs(
                 }
             )
         )
-
     return all_experiments
 
 
@@ -178,6 +177,7 @@ async def update_arm(
     arms = [a for a in experiment_data.arms if a.arm_id == arm_id]
     if not arms:
         raise HTTPException(status_code=404, detail=f"Arm with id {arm_id} not found")
+
     arm = arms[0]
 
     # Update arm based on reward type

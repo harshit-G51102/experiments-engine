@@ -126,7 +126,6 @@ class MABObservationDB(ObservationsBaseDB):
     experiment: Mapped[MultiArmedBanditDB] = relationship(
         "MultiArmedBanditDB", back_populates="observations", lazy="joined"
     )
-
     __mapper_args__ = {"polymorphic_identity": "mab_observations"}
 
     def to_dict(self) -> dict:
@@ -155,7 +154,6 @@ async def save_mab_to_db(
         )
         for arm in experiment.arms
     ]
-
     experiment_db = MultiArmedBanditDB(
         name=experiment.name,
         description=experiment.description,
@@ -214,7 +212,6 @@ async def delete_mab_by_id(
     """
     Delete the experiment by id.
     """
-
     await asession.execute(
         delete(NotificationsDB)
         .where(NotificationsDB.user_id == user_id)

@@ -112,7 +112,6 @@ class TestMab:
         if request.param == "invalid_sigma":
             payload_normal["arms"][0]["sigma"] = 0.0
             return payload_normal
-
         else:
             raise ValueError("Invalid parameter")
 
