@@ -48,6 +48,19 @@ base_normal_payload["arms"] = [
 
 
 @fixture
+def admin_token(client: TestClient) -> str:
+    response = client.post(
+        "/login",
+        data={
+            "username": os.environ.get("ADMIN_USERNAME", ""),
+            "password": os.environ.get("ADMIN_PASSWORD", ""),
+        },
+    )
+    token = response.json()["access_token"]
+    return token
+
+
+@fixture
 def clean_mabs(db_session: Session) -> Generator:
     yield
     db_session.query(NotificationsDB).delete()

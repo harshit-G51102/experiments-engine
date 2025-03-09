@@ -226,6 +226,7 @@ async def get_outcomes(
         return HTTPException(
             status_code=404, detail=f"Experiment with id {experiment_id} not found"
         )
+    experiment.n_trials += 1
 
     rewards = await get_all_rewards_by_experiment_id(
         experiment_id=experiment.experiment_id,

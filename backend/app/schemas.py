@@ -62,9 +62,6 @@ class NotificationsResponse(BaseModel):
     is_active: bool
 
 
-# Schemas for sampling
-
-
 class Outcome(float, Enum):
     """
     Enum for the outcome of a trial.
