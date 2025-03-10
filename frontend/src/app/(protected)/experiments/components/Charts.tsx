@@ -5,7 +5,12 @@ import { gamma } from "mathjs";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
-const lngamma = (x: number): number => Math.log(gamma(x));
+const lngamma = (x: number): number => {
+  if (typeof x!== "number" || isNaN(x) || x <= 0) {
+    return NaN;
+  }
+  return Math.log(gamma(x));
+};
 
 const lnBetaPDF = (x: number, a: number, b: number): number => {
   const betaInv = lngamma(a + b) - lngamma(a) - lngamma(b);
