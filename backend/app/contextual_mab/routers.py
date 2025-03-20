@@ -215,7 +215,8 @@ async def update_arm(
     experiment_data = ContextualBanditSample.model_validate(experiment)
 
     # Get the arm
-    arms = [a for a in experiment_data.arms if a.arm_id == arm_id]
+    arms = [a for a in experiment.arms if a.arm_id == arm_id]
+
     if not arms:
         raise HTTPException(status_code=404, detail=f"Arm with id {arm_id} not found")
     else:
@@ -231,7 +232,7 @@ async def update_arm(
         rewards = [obs.reward for obs in all_obs] + [reward]
         contexts = [obs.context_val for obs in all_obs] + [
             sorted(
-                context.context_value
+                float(context.context_value)
                 for context in sorted(context, key=lambda x: x.context_id)
             )
         ]
@@ -248,6 +249,7 @@ async def update_arm(
         # Update the arm in the database
         arm.mu = mu.tolist()
         arm.covariance = covariance.tolist()
+        asession.add(arm)
         await asession.commit()
 
         # Save the observation
