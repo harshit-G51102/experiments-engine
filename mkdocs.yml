@@ -1,8 +1,10 @@
-site_name: Experimentation Engine
+site_name: Experiment Engine
 site_description: A platform for running experiments and analyzing results
 site_url: https://experiments-engine.idinsight.github.io
 theme:
   name: material
+  icon:
+    logo: material/test-tube
   palette:
     - scheme: default
       toggle:
@@ -21,13 +23,21 @@ theme:
     code: "Roboto Mono"
   features:
     - navigation.tabs
-    - navigation.tabs.sticky
     - content.code.annotate
     - content.code.copy
     - navigation.sections
     - navigation.indexes
     - navigation.top
 
+nav:
+  - Welcome to ExE: index.md
+  - Deploying: deploying.md
+  - Set up your first experiment:
+    - first-experiment/index.md
+    - Create an experiment: first-experiment/create.md
+    - Integrate with your application: first-experiment/integrate.md
+    - Monitor your experiment: first-experiment/monitor.md
+  - Blog: blog/index.md
 
 markdown_extensions:
   - admonition
@@ -54,6 +64,8 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.tasklist:
+      custom_checkbox: true
 plugins:
   - glightbox
   - search
