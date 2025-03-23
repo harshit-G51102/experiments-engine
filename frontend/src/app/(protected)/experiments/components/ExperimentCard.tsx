@@ -5,13 +5,15 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { MAB, BetaParams } from "../types";
+import { MABBeta, MABNormal, BetaParams } from "../types";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BetaLineChart } from "./Charts";
+import { Trash2 } from "lucide-react";
 
-export default function ExperimentCars({ experiment }: { experiment: MAB }) {
+export default function ExperimentCars({ experiment }: { experiment: MABBeta }) {
   const { experiment_id, name, is_active, arms } = { ...experiment };
+  const [isHovered, setIsHovered] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   // TODO: Fix maxvalue calculation
   // const maxValue =
@@ -71,6 +73,7 @@ export default function ExperimentCars({ experiment }: { experiment: MAB }) {
             isExpanded ? null : toggleExpand();
           }}
         >
+
           <CardHeader className="flex flex-row items-start align-top justify-between space-y-0 pb-2">
             <div className="flex flex-col space-y-1">
               <CardTitle className="text-2xl font-bold">{name}</CardTitle>
