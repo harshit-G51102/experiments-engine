@@ -1,6 +1,7 @@
-type MethodType = "mab" | "ab";
+type MethodType = "mab" | "cmab" | "ab";
 type RewardType = "binary" | "real-valued";
 type PriorType = "beta" | "normal";
+type ContextType = "binary" | "real-valued";
 
 interface BetaParams {
   name: string;
@@ -25,6 +26,12 @@ type Notifications = {
   onPercentBetter?: boolean;
   percentBetterThreshold?: number;
 };
+
+type Context = {
+  name: string;
+  description: string;
+  context_type: ContextType;
+}
 
 interface ExperimentStateBase {
   name: string;
@@ -112,7 +119,37 @@ interface MABBeta extends MABExperimentStateBeta {
   arms: MABArmBeta[];
 }
 
-type ExperimentState = MABExperimentStateNormal | MABExperimentStateBeta | ABExperimentState;
+// ----- CMAB
+
+interface NewCMABArm extends ArmBase {
+  mu_init: number;
+  sigma_init: number;
+}
+
+interface CMABArm extends NewCMABArm {
+  arm_id: number;
+  mu: number[];
+  sigma: number[];
+}
+
+interface CMABExperimentState extends ExperimentStateBase {
+  methodType: "cmab";
+  arms: NewCMABArm[];
+  context: Context[];
+  notifications: Notifications;
+}
+
+
+interface CMAB extends CMABExperimentState {
+  experiment_id: number;
+  is_active: boolean;
+  arms: CMABArm[];
+}
+
+type ExperimentState = MABExperimentStateNormal
+| MABExperimentStateBeta
+| CMABExperimentState
+| ABExperimentState;
 
 export type {
   AB,
@@ -120,6 +157,10 @@ export type {
   ABExperimentState,
   ArmBase,
   BetaParams,
+  CMAB,
+  CMABArm,
+  CMABExperimentState,
+  Context,
   ExperimentState,
   ExperimentStateBase,
   MABBeta,
@@ -130,11 +171,13 @@ export type {
   MABExperimentStateNormal,
   MethodType,
   NewABArm,
+  NewCMABArm,
   NewMABArmBeta,
   NewMABArmNormal,
   Notifications,
   PriorType,
   RewardType,
+  ContextType,
   Step,
   StepComponentProps,
   StepValidation,

@@ -15,9 +15,7 @@ import { Heading } from "@/components/catalyst/heading";
 import {
   MABExperimentStateNormal,
   MABExperimentStateBeta,
-  NewMABArmBeta,
-  NewMABArmNormal,
-  NewABArm,
+  CMABExperimentState,
   ABExperimentState,
   StepValidation,
 } from "../../types";
@@ -38,15 +36,6 @@ export default function AddBasicInfo({
     methodType: "",
   });
 
-  // const defaultMABArms: NewMABArm[] = [
-  //   { name: "", description: "", alpha: 1, beta: 1 },
-  //   { name: "", description: "", alpha: 1, beta: 1 },
-  // ];
-  // const defaultABArms: NewABArm[] = [
-  //   { name: "", description: "", mean_prior: 0, stdDev_prior: 1 },
-  //   { name: "", description: "", mean_prior: 0, stdDev_prior: 1 },
-  // ];
-
   const methodSelect = (value: keyof Methods) => {
     setMethodType(value);
     // TODO: It's not clean to have this component worr about each experiment type,
@@ -57,6 +46,11 @@ export default function AddBasicInfo({
           ...prevState,
           methodType: "mab",
         } as MABExperimentStateBeta | MABExperimentStateNormal;
+      } else if (value === "cmab") {
+        return {
+          ...prevState,
+          methodType: "cmab",
+        } as CMABExperimentState;
       } else {
         return {
           ...prevState,
@@ -155,6 +149,13 @@ export default function AddBasicInfo({
             <Label htmlFor="mab">Multi-armed Bandit</Label>
             <Description>
               A method that automatically converges to the best performing arm.
+            </Description>
+          </RadioField>
+          <RadioField>
+            <Radio id="cmab" value="cmab" />
+            <Label htmlFor="cmab">Contextual Bandit</Label>
+            <Description>
+              A method that automatically converges to the best performing arm conditional on context.
             </Description>
           </RadioField>
           <RadioField>

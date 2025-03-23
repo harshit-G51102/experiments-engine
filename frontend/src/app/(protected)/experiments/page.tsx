@@ -2,7 +2,7 @@
 import React from "react";
 import EmptyPage from "./components/EmptyPage";
 import { getAllMABExperiments } from "./api";
-import { MAB } from "./types";
+import { MABBeta, MABNormal } from "./types";
 import ExperimentCard from "./components/ExperimentCard";
 import Hourglass from "@/components/Hourglass";
 import FloatingAddButton from "./components/FloatingAddButton";
@@ -10,7 +10,7 @@ import { Link } from "@/components/catalyst/link";
 import { useAuth } from "@/utils/auth";
 
 export default function Experiments() {
-  const [experiments, setExperiments] = React.useState<MAB[]>([]);
+  const [experiments, setExperiments] = React.useState<MABBeta[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   const { token } = useAuth();
@@ -51,7 +51,7 @@ export default function Experiments() {
   );
 }
 
-const ExperimentCardGrid = ({ experiments }: { experiments: MAB[] }) => {
+const ExperimentCardGrid = ({ experiments }: { experiments: MABBeta[] | MABNormal[] }) => {
   return (
     <ul
       role="list"

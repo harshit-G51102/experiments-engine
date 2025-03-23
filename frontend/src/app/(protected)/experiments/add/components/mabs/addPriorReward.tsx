@@ -29,7 +29,7 @@ const priorTypeInfo: Record<PriorType, { name: string; description: string }> = 
     },
   }
 
-export default function PriorRewardSelection({ onValidate }: StepComponentProps) {
+export default function MABPriorRewardSelection({ onValidate }: StepComponentProps) {
     const { experimentState, setExperimentState } = useExperiment();
     const [errors, setErrors] = useState({
         priorType: "",

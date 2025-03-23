@@ -4,11 +4,16 @@ import type React from "react";
 import { createContext, useContext, useState } from "react";
 import {
   ExperimentState,
+  CMABExperimentState,
+  CMAB,
+  CMABArm,
   MABExperimentStateBeta,
   MABExperimentStateNormal,
   ABExperimentState,
   PriorType,
   RewardType,
+  ContextType,
+  Context,
   MethodType,
   MABArmBeta,
   MABArmNormal,
@@ -55,7 +60,11 @@ export const ExperimentProvider: React.FC<{ children: React.ReactNode }> = ({
     },
   }
 
-  const [experimentState, setExperimentState] = useState<MABExperimentStateBeta | MABExperimentStateNormal | ABExperimentState>(() => {
+  const [experimentState, setExperimentState] = useState<
+    MABExperimentStateBeta |
+    MABExperimentStateNormal |
+    ABExperimentState |
+    CMABExperimentState>(() => {
       if (methodType === "mab") {
         if (priorType === "beta") {
           return {
@@ -74,6 +83,17 @@ export const ExperimentProvider: React.FC<{ children: React.ReactNode }> = ({
             ],
           } as MABExperimentStateNormal;
         }
+      } else if (methodType === "cmab") {
+        return {
+          ...baseMABState,
+          arms: [
+            { name: "", description: "", mu_init: 0, sigma_init: 1 } as CMABArm,
+            { name: "", description: "", mu_init: 0, sigma_init: 1 } as CMABArm,
+          ],
+          context: [
+            { name: "", description: "", context_type: "binary" } as Context
+          ],
+        } as CMABExperimentState;
       } else {
         return {
           ...baseMABState,
