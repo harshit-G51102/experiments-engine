@@ -70,28 +70,49 @@ interface AB extends ABExperimentState {
 
 // ----- MAB
 
-interface NewMABArm extends ArmBase {
+interface NewMABArmBeta extends ArmBase {
   alpha: number;
   beta: number;
 }
 
-interface MABArm extends NewMABArm {
+interface NewMABArmNormal extends ArmBase {
+  mu: number;
+  sigma: number;
+}
+
+interface MABArmBeta extends NewMABArmBeta {
   arm_id: number;
 }
 
-interface MABExperimentState extends ExperimentStateBase {
+interface MABArmNormal extends NewMABArmNormal {
+  arm_id: number;
+}
+
+interface MABExperimentStateNormal extends ExperimentStateBase {
   methodType: "mab";
-  arms: NewMABArm[];
+  arms: NewMABArmNormal[];
   notifications: Notifications;
 }
 
-interface MAB extends MABExperimentState {
-  experiment_id: number;
-  is_active: boolean;
-  arms: MABArm[];
+interface MABExperimentStateBeta extends ExperimentStateBase {
+  methodType: "mab";
+  arms: NewMABArmBeta[];
+  notifications: Notifications;
 }
 
-type ExperimentState = MABExperimentState | ABExperimentState;
+interface MABNormal extends MABExperimentStateNormal {
+  experiment_id: number;
+  is_active: boolean;
+  arms: MABArmNormal[];
+}
+
+interface MABBeta extends MABExperimentStateBeta {
+  experiment_id: number;
+  is_active: boolean;
+  arms: MABArmBeta[];
+}
+
+type ExperimentState = MABExperimentStateNormal | MABExperimentStateBeta | ABExperimentState;
 
 export type {
   AB,
@@ -101,13 +122,19 @@ export type {
   BetaParams,
   ExperimentState,
   ExperimentStateBase,
-  MAB,
-  MABArm,
-  MABExperimentState,
+  MABBeta,
+  MABNormal,
+  MABArmBeta,
+  MABArmNormal,
+  MABExperimentStateBeta,
+  MABExperimentStateNormal,
   MethodType,
   NewABArm,
-  NewMABArm,
+  NewMABArmBeta,
+  NewMABArmNormal,
   Notifications,
+  PriorType,
+  RewardType,
   Step,
   StepComponentProps,
   StepValidation,

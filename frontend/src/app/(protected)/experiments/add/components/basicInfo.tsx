@@ -13,8 +13,10 @@ import { AllSteps } from "./addExperimentSteps";
 import { useExperiment } from "./AddExperimentContext";
 import { Heading } from "@/components/catalyst/heading";
 import {
-  MABExperimentState,
-  NewMABArm,
+  MABExperimentStateNormal,
+  MABExperimentStateBeta,
+  NewMABArmBeta,
+  NewMABArmNormal,
   NewABArm,
   ABExperimentState,
   StepValidation,
@@ -36,14 +38,14 @@ export default function AddBasicInfo({
     methodType: "",
   });
 
-  const defaultMABArms: NewMABArm[] = [
-    { name: "", description: "", alpha: 1, beta: 1 },
-    { name: "", description: "", alpha: 1, beta: 1 },
-  ];
-  const defaultABArms: NewABArm[] = [
-    { name: "", description: "", mean_prior: 0, stdDev_prior: 1 },
-    { name: "", description: "", mean_prior: 0, stdDev_prior: 1 },
-  ];
+  // const defaultMABArms: NewMABArm[] = [
+  //   { name: "", description: "", alpha: 1, beta: 1 },
+  //   { name: "", description: "", alpha: 1, beta: 1 },
+  // ];
+  // const defaultABArms: NewABArm[] = [
+  //   { name: "", description: "", mean_prior: 0, stdDev_prior: 1 },
+  //   { name: "", description: "", mean_prior: 0, stdDev_prior: 1 },
+  // ];
 
   const methodSelect = (value: keyof Methods) => {
     setMethodType(value);
@@ -54,13 +56,11 @@ export default function AddBasicInfo({
         return {
           ...prevState,
           methodType: "mab",
-          arms: defaultMABArms,
-        } as MABExperimentState;
+        } as MABExperimentStateBeta | MABExperimentStateNormal;
       } else {
         return {
           ...prevState,
           methodType: "ab",
-          arms: defaultABArms,
         } as ABExperimentState;
       }
     });

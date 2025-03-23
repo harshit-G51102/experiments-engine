@@ -1,5 +1,5 @@
 import api from "@/utils/api";
-import { MABExperimentState, ABExperimentState } from "./types";
+import { MABExperimentStateNormal, MABExperimentStateBeta, ABExperimentState } from "./types";
 import { ExperimentState } from "./types";
 
 const createNewExperiment = async ({
@@ -10,11 +10,16 @@ const createNewExperiment = async ({
   token: string | null;
 }) => {
   let endpoint: string;
-  let newExperimentData: MABExperimentState | ABExperimentState;
+  let newExperimentData: MABExperimentStateNormal | MABExperimentStateBeta | ABExperimentState;
 
   if (experimentData.methodType == "mab") {
-    newExperimentData = experimentData as MABExperimentState;
     endpoint = "/mab/";
+    if (experimentData.priorType == "beta") {
+      newExperimentData = experimentData as MABExperimentStateBeta;
+    } else {
+      newExperimentData = experimentData as MABExperimentStateNormal;
+    }
+
   } else if (experimentData.methodType == "ab") {
     newExperimentData = experimentData as ABExperimentState;
     endpoint = "/ab/";
@@ -25,8 +30,18 @@ const createNewExperiment = async ({
   try {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { methodType, ...rest } = newExperimentData;
-    console.log(rest);
-    const response = await api.post(endpoint, rest, {
+
+    const convertedData = {
+      name: rest.name,
+      description: rest.description,
+      reward_type: rest.rewardType,
+      prior_type: rest.priorType,
+      arms: rest.arms,
+      notifications: rest.notifications,
+    }
+
+    console.log(convertedData);
+    const response = await api.post(endpoint, convertedData, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
