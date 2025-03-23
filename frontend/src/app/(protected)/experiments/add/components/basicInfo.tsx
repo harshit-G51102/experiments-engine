@@ -50,6 +50,7 @@ export default function AddBasicInfo({
         return {
           ...prevState,
           methodType: "cmab",
+          priorType: "normal",
         } as CMABExperimentState;
       } else {
         return {

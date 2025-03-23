@@ -1,5 +1,5 @@
 import api from "@/utils/api";
-import { MABExperimentStateNormal, MABExperimentStateBeta, ABExperimentState } from "./types";
+import { MABExperimentStateNormal, MABExperimentStateBeta, ABExperimentState, CMABExperimentState } from "./types";
 import { ExperimentState } from "./types";
 
 const createNewExperiment = async ({
@@ -10,7 +10,8 @@ const createNewExperiment = async ({
   token: string | null;
 }) => {
   let endpoint: string;
-  let newExperimentData: MABExperimentStateNormal | MABExperimentStateBeta | ABExperimentState;
+  let newExperimentData: MABExperimentStateNormal | MABExperimentStateBeta | ABExperimentState | CMABExperimentState;
+  let convertedData = null;
 
   if (experimentData.methodType == "mab") {
     endpoint = "/mab/";
@@ -19,27 +20,41 @@ const createNewExperiment = async ({
     } else {
       newExperimentData = experimentData as MABExperimentStateNormal;
     }
-
-  } else if (experimentData.methodType == "ab") {
-    newExperimentData = experimentData as ABExperimentState;
-    endpoint = "/ab/";
-  } else {
-    throw new Error("Invalid experiment type");
-  }
-
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { methodType, ...rest } = newExperimentData;
-
-    const convertedData = {
+    convertedData = {
       name: rest.name,
       description: rest.description,
       reward_type: rest.rewardType,
       prior_type: rest.priorType,
       arms: rest.arms,
       notifications: rest.notifications,
-    }
+    };
 
+  } else if (experimentData.methodType == "ab") {
+    newExperimentData = experimentData as ABExperimentState;
+    endpoint = "/ab/";
+    const { methodType, ...rest } = newExperimentData;
+    convertedData = {...rest};
+
+  } else if (experimentData.methodType == "cmab") {
+    newExperimentData = experimentData as CMABExperimentState;
+    endpoint = "/contextual_mab/";
+    const { methodType, ...rest } = newExperimentData;
+    convertedData = {
+      name: rest.name,
+      description: rest.description,
+      reward_type: rest.rewardType,
+      prior_type: rest.priorType,
+      arms: rest.arms,
+      notifications: rest.notifications,
+      contexts: rest.contexts,
+    };
+  } else {
+    throw new Error("Invalid experiment type");
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     console.log(convertedData);
     const response = await api.post(endpoint, convertedData, {
       headers: {
