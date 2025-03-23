@@ -84,8 +84,10 @@ export const ExperimentProvider: React.FC<{ children: React.ReactNode }> = ({
           } as MABExperimentStateNormal;
         }
       } else if (methodType === "cmab") {
+        const {priorType, ...rest} = baseMABState;
         return {
-          ...baseMABState,
+          ...rest,
+          priorType: "normal",
           arms: [
             { name: "", description: "", mu_init: 0, sigma_init: 1 } as CMABArm,
             { name: "", description: "", mu_init: 0, sigma_init: 1 } as CMABArm,

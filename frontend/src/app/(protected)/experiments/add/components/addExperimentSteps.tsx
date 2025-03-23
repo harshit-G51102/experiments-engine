@@ -3,7 +3,7 @@ import AddMABArms from "./mabs/addMABArms";
 import MABPriorRewardSelection from "./mabs/addPriorReward";
 import AddCMABArms from "./cmabs/addCMABArms";
 // import AddCMABContexts from "./cmabs/addCMABContexts";
-// import CMABPriorRewardSelection from "./cmabs/addPriorReward";
+import CMABPriorRewardSelection from "./cmabs/addPriorReward";
 import AddABArms from "./ab/addABArms";
 import AddNotifications from "./addNotifications";
 
@@ -24,10 +24,10 @@ const MABsteps: Step[] = [
 // --- CMAB test types and steps ---
 
 const CMABsteps: Step[] = [
-  // {
-  //   name: "Configure MAB",
-  //   component: CMABPriorRewardSelection,
-  // },
+  {
+    name: "Configure MAB",
+    component: CMABPriorRewardSelection,
+  },
   // {
   //   name: "Add Contexts",
   //   component: AddCMABContexts,
