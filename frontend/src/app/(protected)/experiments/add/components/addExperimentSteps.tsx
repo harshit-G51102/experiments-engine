@@ -2,7 +2,7 @@ import { Step } from "../../types";
 import AddMABArms from "./mabs/addMABArms";
 import MABPriorRewardSelection from "./mabs/addPriorReward";
 import AddCMABArms from "./cmabs/addCMABArms";
-// import AddCMABContexts from "./cmabs/addCMABContexts";
+import AddCMABContexts from "./cmabs/addCMABContext";
 import CMABPriorRewardSelection from "./cmabs/addPriorReward";
 import AddABArms from "./ab/addABArms";
 import AddNotifications from "./addNotifications";
@@ -28,10 +28,10 @@ const CMABsteps: Step[] = [
     name: "Configure MAB",
     component: CMABPriorRewardSelection,
   },
-  // {
-  //   name: "Add Contexts",
-  //   component: AddCMABContexts,
-  // },
+  {
+    name: "Add Contexts",
+    component: AddCMABContexts,
+  },
   {
     name: "Add Arms",
     component: AddCMABArms,

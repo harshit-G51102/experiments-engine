@@ -15,7 +15,7 @@ import {
   import { Heading } from "@/components/catalyst/heading";
   import { useCallback, useEffect, useState, useRef } from "react";
 
-  export default function AddMABArms({ onValidate }: StepComponentProps) {
+  export default function AddCMABArms({ onValidate }: StepComponentProps) {
     const { experimentState, setExperimentState } = useExperiment();
     const muInputRefs = useRef<HTMLInputElement[]>([]);
 

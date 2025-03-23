@@ -27,10 +27,14 @@ type Notifications = {
   percentBetterThreshold?: number;
 };
 
-type Context = {
+interface NewContext {
   name: string;
   description: string;
-  context_type: ContextType;
+  value_type: ContextType;
+}
+
+interface Context extends NewContext {
+  context_id: number;
 }
 
 interface ExperimentStateBase {
@@ -135,7 +139,7 @@ interface CMABArm extends NewCMABArm {
 interface CMABExperimentState extends ExperimentStateBase {
   methodType: "cmab";
   arms: NewCMABArm[];
-  context: Context[];
+  contexts: NewContext[];
   notifications: Notifications;
 }
 
@@ -172,6 +176,7 @@ export type {
   MethodType,
   NewABArm,
   NewCMABArm,
+  NewContext,
   NewMABArmBeta,
   NewMABArmNormal,
   Notifications,

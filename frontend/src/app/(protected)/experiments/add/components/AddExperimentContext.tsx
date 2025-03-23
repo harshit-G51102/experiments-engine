@@ -12,12 +12,11 @@ import {
   ABExperimentState,
   PriorType,
   RewardType,
-  ContextType,
-  Context,
   MethodType,
   MABArmBeta,
   MABArmNormal,
-  ABArm
+  ABArm,
+  NewContext
 } from "../../types";
 
 type ExperimentContextType = {
@@ -92,8 +91,8 @@ export const ExperimentProvider: React.FC<{ children: React.ReactNode }> = ({
             { name: "", description: "", mu_init: 0, sigma_init: 1 } as CMABArm,
             { name: "", description: "", mu_init: 0, sigma_init: 1 } as CMABArm,
           ],
-          context: [
-            { name: "", description: "", context_type: "binary" } as Context
+          contexts: [
+            { name: "", description: "", value_type: "binary" } as NewContext
           ],
         } as CMABExperimentState;
       } else {
