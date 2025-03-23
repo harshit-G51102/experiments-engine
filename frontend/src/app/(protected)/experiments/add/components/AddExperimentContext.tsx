@@ -2,7 +2,22 @@
 
 import type React from "react";
 import { createContext, useContext, useState } from "react";
-import { ExperimentState } from "../../types";
+import {
+  ExperimentState,
+  CMABExperimentState,
+  CMAB,
+  CMABArm,
+  MABExperimentStateBeta,
+  MABExperimentStateNormal,
+  ABExperimentState,
+  PriorType,
+  RewardType,
+  MethodType,
+  MABArmBeta,
+  MABArmNormal,
+  ABArm,
+  NewContext
+} from "../../types";
 
 type ExperimentContextType = {
   experimentState: ExperimentState;
@@ -24,16 +39,16 @@ export const useExperiment = () => {
 export const ExperimentProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [experimentState, setExperimentState] = useState<ExperimentState>({
-    name: "",
-    description: "",
-    methodType: "mab",
-    rewardType: "binary",
-    priorType: "beta",
-    arms: [
-      { name: "", description: "", alpha: 1, beta: 1 },
-      { name: "", description: "", alpha: 1, beta: 1 },
-    ],
+  const baseDescr = {"name": "", "description": ""};
+  const [methodType, setMethodType] = useState<MethodType>("mab");
+  const [priorType, setPriorType] = useState<PriorType>("beta");
+  const [rewardType, setRewardType] = useState<RewardType>("binary");
+
+  const baseMABState = {
+    ...baseDescr,
+    methodType: methodType,
+    rewardType: rewardType,
+    priorType: priorType,
     notifications: {
       onTrialCompletion: false,
       numberOfTrials: 0,
@@ -42,7 +57,54 @@ export const ExperimentProvider: React.FC<{ children: React.ReactNode }> = ({
       onPercentBetter: false,
       percentBetterThreshold: 0,
     },
-  });
+  }
+
+  const [experimentState, setExperimentState] = useState<
+    MABExperimentStateBeta |
+    MABExperimentStateNormal |
+    ABExperimentState |
+    CMABExperimentState>(() => {
+      if (methodType === "mab") {
+        if (priorType === "beta") {
+          return {
+            ...baseMABState,
+            arms: [
+              { name: "", description: "", alpha: 1, beta: 1 } as MABArmBeta,
+              { name: "", description: "", alpha: 1, beta: 1 } as MABArmBeta,
+            ],
+          } as MABExperimentStateBeta;
+        } else {
+          return {
+            ...baseMABState,
+            arms: [
+              { name: "", description: "", mu: 0, sigma: 1 } as MABArmNormal,
+              { name: "", description: "", mu: 0, sigma: 1 } as MABArmNormal,
+            ],
+          } as MABExperimentStateNormal;
+        }
+      } else if (methodType === "cmab") {
+        const {priorType, ...rest} = baseMABState;
+        return {
+          ...rest,
+          priorType: "normal",
+          arms: [
+            { name: "", description: "", mu_init: 0, sigma_init: 1 } as CMABArm,
+            { name: "", description: "", mu_init: 0, sigma_init: 1 } as CMABArm,
+          ],
+          contexts: [
+            { name: "", description: "", value_type: "binary" } as NewContext
+          ],
+        } as CMABExperimentState;
+      } else {
+        return {
+          ...baseMABState,
+          arms: [
+            { name: "", description: "", mean_posterior: 0, stdDev_posterior: 1 } as ABArm,
+            { name: "", description: "", mean_posterior: 0, stdDev_posterior: 1 } as ABArm,
+          ]
+        } as ABExperimentState;
+      }
+    });
 
   return (
     <ExperimentContext.Provider value={{ experimentState, setExperimentState }}>

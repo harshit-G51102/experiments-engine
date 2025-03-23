@@ -13,9 +13,9 @@ import { AllSteps } from "./addExperimentSteps";
 import { useExperiment } from "./AddExperimentContext";
 import { Heading } from "@/components/catalyst/heading";
 import {
-  MABExperimentState,
-  NewMABArm,
-  NewABArm,
+  MABExperimentStateNormal,
+  MABExperimentStateBeta,
+  CMABExperimentState,
   ABExperimentState,
   StepValidation,
 } from "../../types";
@@ -36,15 +36,6 @@ export default function AddBasicInfo({
     methodType: "",
   });
 
-  const defaultMABArms: NewMABArm[] = [
-    { name: "", description: "", alpha: 1, beta: 1 },
-    { name: "", description: "", alpha: 1, beta: 1 },
-  ];
-  const defaultABArms: NewABArm[] = [
-    { name: "", description: "", mean_prior: 0, stdDev_prior: 1 },
-    { name: "", description: "", mean_prior: 0, stdDev_prior: 1 },
-  ];
-
   const methodSelect = (value: keyof Methods) => {
     setMethodType(value);
     // TODO: It's not clean to have this component worr about each experiment type,
@@ -54,13 +45,17 @@ export default function AddBasicInfo({
         return {
           ...prevState,
           methodType: "mab",
-          arms: defaultMABArms,
-        } as MABExperimentState;
+        } as MABExperimentStateBeta | MABExperimentStateNormal;
+      } else if (value === "cmab") {
+        return {
+          ...prevState,
+          methodType: "cmab",
+          priorType: "normal",
+        } as CMABExperimentState;
       } else {
         return {
           ...prevState,
           methodType: "ab",
-          arms: defaultABArms,
         } as ABExperimentState;
       }
     });
@@ -155,6 +150,13 @@ export default function AddBasicInfo({
             <Label htmlFor="mab">Multi-armed Bandit</Label>
             <Description>
               A method that automatically converges to the best performing arm.
+            </Description>
+          </RadioField>
+          <RadioField>
+            <Radio id="cmab" value="cmab" />
+            <Label htmlFor="cmab">Contextual Bandit</Label>
+            <Description>
+              A method that automatically converges to the best performing arm conditional on context.
             </Description>
           </RadioField>
           <RadioField>
