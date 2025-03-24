@@ -221,7 +221,7 @@ import { Radio, RadioGroup, RadioField } from "@/components/catalyst/radio";
                       <div className="basis-3/4 flex flex-col">
                         <Textarea
                           name={`context-${index + 1}-description`}
-                          placeholder="Describe the arm"
+                          placeholder="Describe the context"
                           value={context.description || ""}
                           onChange={(e) => {
                             const newContexts = [...contexts];
@@ -247,7 +247,7 @@ import { Radio, RadioGroup, RadioField } from "@/components/catalyst/radio";
                 <Field className="flex flex-col mb-4">
                     <div className="flex flex-row">
                     <Label className="basis-1/4 mt-3 font-medium" htmlFor="mu">
-                        Context value type
+                        Context type
                     </Label>
                     <div className="basis-3/4 flex flex-col">
                     <RadioGroup
@@ -267,7 +267,6 @@ import { Radio, RadioGroup, RadioField } from "@/components/catalyst/radio";
                               <Label htmlFor={`context-${index}-binary`} className="font-medium">
                                 Binary
                               </Label>
-                              <Description className="text-sm text-gray-400">For yes/no, true/false, or 0/1 values</Description>
                             </div>
                         </RadioField>
 
@@ -277,9 +276,6 @@ import { Radio, RadioGroup, RadioField } from "@/components/catalyst/radio";
                               <Label htmlFor={`context-${index}-real-valued`} className="font-medium">
                                 Real-valued
                               </Label>
-                            <Description className="text-sm text-gray-400">
-                                For numeric values like age, temperature, etc.
-                            </Description>
                             </div>
                         </RadioField>
                         </div>

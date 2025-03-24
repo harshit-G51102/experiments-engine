@@ -1,15 +1,13 @@
 import {
   Card,
   CardContent,
-  CardHeader,
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { MABBeta, MABNormal, CMAB, BetaParams, MethodType } from "../types";
+import { MABBeta, MABNormal, CMAB, MethodType } from "../types";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { BetaLineChart } from "./Charts";
 import { MABBetaCards, MABNormalCards } from "./cards/createMABCard";
+import { CMABCards } from "./cards/createCMABCard";
 import { Trash2 } from "lucide-react";
 
 export default function ExperimentCards({ experiment, methodType }:
@@ -19,25 +17,29 @@ export default function ExperimentCards({ experiment, methodType }:
 
 if (methodType === "mab" && experiment.prior_type === "beta") {
   const betaExperiment = experiment as MABBeta;
-  return MABBetaCards({
-    experiment: betaExperiment,
-    successes: [3, 1],
-    failures: [0, 3],
-    isHovered,
-    setIsHovered,
-    isExpanded,
-    setIsExpanded });
+  return <MABBetaCards
+    experiment={betaExperiment}
+    successes={[3, 1]} // TODO: hardcoding these values for demo purposes; need to fetch from API
+    failures={[0, 3]} // TODO: hardcoding these values for demo purposes; need to fetch from API
+    isExpanded={isExpanded}
+    setIsExpanded={setIsExpanded} />;
 } else if (methodType === "mab" && experiment.prior_type === "normal") {
   const normalExperiment = experiment as MABNormal;
-  return MABNormalCards({
-    experiment: normalExperiment,
-    mu_final: [2.5, -1.3],
-    sigma_final: [1.5, 2.3],
-    isHovered,
-    setIsHovered,
-    isExpanded,
-    setIsExpanded,
-  });
+  return <MABNormalCards
+    experiment={normalExperiment}
+    mu_final={[2.5, -1.3]} // TODO: hardcoding these values for demo purposes; need to fetch from API
+    sigma_final={[1.5, 2.3]} // TODO: hardcoding these values for demo purposes; need to fetch from API
+    isExpanded={isExpanded}
+    setIsExpanded={setIsExpanded}
+  />;
+} else if (methodType === "cmab") {
+  const cmabExperiment = experiment as CMAB;
+  return <CMABCards
+    experiment={cmabExperiment}
+    isExpanded={isExpanded}
+    setIsExpanded={setIsExpanded}
+  />;
+
 }
 
 // Default case for other experiment types

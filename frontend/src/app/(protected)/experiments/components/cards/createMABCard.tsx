@@ -15,15 +15,11 @@ export function MABBetaCards({
     experiment,
     successes,
     failures,
-    isHovered,
-    setIsHovered,
     isExpanded,
     setIsExpanded }:
     { experiment: MABBeta,
       successes: number[],
       failures: number[],
-      isHovered: boolean,
-      setIsHovered: (isHovered: boolean) => void,
       isExpanded: boolean,
       setIsExpanded: (isExpanded: boolean) => void }) {
 
@@ -163,17 +159,13 @@ export function MABBetaCards({
 
 export function MABNormalCards({
     experiment,
-    mu_final,
-    sigma_final,
-    isHovered,
-    setIsHovered,
+    mu_final, // TODO: this will not work once experiments updates the mu param
+    sigma_final, // TODO: this will not work once experiments updates the mu param
     isExpanded,
     setIsExpanded }:
     { experiment: MABNormal,
       mu_final: number[],
       sigma_final: number[],
-      isHovered: boolean,
-      setIsHovered: (isHovered: boolean) => void,
       isExpanded: boolean,
       setIsExpanded: (isExpanded: boolean) => void }) {
 

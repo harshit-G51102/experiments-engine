@@ -80,4 +80,18 @@ const getAllMABExperiments = async (token: string | null) => {
   }
 };
 
-export { createNewExperiment, getAllMABExperiments };
+
+const getAllCMABExperiments = async (token: string | null) => {
+  try {
+    const response = await api.get("/contextual_mab/", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(`Error fetching all experiments: ${error.message}`);
+  }
+};
+
+export { createNewExperiment, getAllMABExperiments, getAllCMABExperiments };
