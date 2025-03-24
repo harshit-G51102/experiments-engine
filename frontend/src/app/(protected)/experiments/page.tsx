@@ -59,7 +59,7 @@ const ExperimentCardGrid = ({ experiments }: { experiments: MABBeta[] | MABNorma
     >
       {experiments.map((experiment) => (
         <li key={experiment.experiment_id}>
-          <ExperimentCard experiment={experiment} />
+          <ExperimentCard experiment={experiment} methodType="mab" />
         </li>
       ))}
     </ul>

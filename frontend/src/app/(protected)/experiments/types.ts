@@ -9,6 +9,12 @@ interface BetaParams {
   beta: number;
 }
 
+interface GaussianParams {
+  name: string;
+  mu: number;
+  sigma: number;
+}
+
 interface StepComponentProps {
   onValidate: (validation: StepValidation) => void;
 }
@@ -167,6 +173,7 @@ export type {
   Context,
   ExperimentState,
   ExperimentStateBase,
+  GaussianParams,
   MABBeta,
   MABNormal,
   MABArmBeta,
