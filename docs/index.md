@@ -15,6 +15,11 @@
 ## What is the Experiments Engine?
 
 Experiments Engine (ExE) enables social sector orgs with digital offerings to create and monitor experiments.
+<figure class="video_container">
+    <video controls="true" allowfullscreen="true">
+        <source src="./images/ExE_mab_recording.mp4" type="video/mp4">
+    </video>
+</figure>
 
 ### Features
 

@@ -30,7 +30,7 @@ export default function ExperimentCars({ experiment }: { experiment: MAB }) {
   const posteriors: BetaParams[] = arms.map((arm) => ({
     name: arm.name,
     alpha: arm.alpha + 3, // TODO: Fix this -- Posterior alpha = alpha_prior + successes
-    beta: arm.beta + 5 //TODO: Fix this -- Posterior beta = beta_prior + failures
+    beta: arm.beta + 5, //TODO: Fix this -- Posterior beta = beta_prior + failures
   }));
   return (
     <div className="flex items-center justify-center">
@@ -64,7 +64,7 @@ export default function ExperimentCars({ experiment }: { experiment: MAB }) {
       >
         <Card
           className={`${isExpanded ? null : "cursor-pointer"} z-60 w-full max-w-[800px] dark:bg-black
-                      dark:border-zinc-400 border-zinc-800 dark:shadown-zinc-600`}
+                      dark:border-zinc-400 border-zinc-800 dark:shadown-zinc-600 min-w-[400px]`}
           onClick={(e) => {
             e.stopPropagation();
             e.nativeEvent.stopImmediatePropagation();
