@@ -63,7 +63,7 @@ Here are some ideas our partners are interested in testing out:
 - [x] What is the best time to send messages to ensure users engage with it?
 - [x] Will this new feature lead to greater time spent on the platform?
 
-    ## Design principles
+## Design principles
 
 Here are the principles that guide the design of ExE:
 
