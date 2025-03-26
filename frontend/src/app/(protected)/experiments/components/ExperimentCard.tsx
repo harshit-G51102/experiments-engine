@@ -8,7 +8,6 @@ import { MABBeta, MABNormal, CMAB, MethodType } from "../types";
 import { useState } from "react";
 import { MABBetaCards, MABNormalCards } from "./cards/createMABCard";
 import { CMABCards } from "./cards/createCMABCard";
-import { Trash2 } from "lucide-react";
 
 export default function ExperimentCards({
   experiment,
@@ -17,10 +16,9 @@ export default function ExperimentCards({
   experiment: MABBeta | MABNormal | CMAB;
   methodType: MethodType;
 }) {
-  const [isHovered, setIsHovered] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  if (methodType === "mab" && experiment.prior_type === "beta") {
+  if (methodType === "mab" && experiment.priorType === "beta") {
     const betaExperiment = experiment as MABBeta;
     return (
       <MABBetaCards
@@ -31,7 +29,7 @@ export default function ExperimentCards({
         setIsExpanded={setIsExpanded}
       />
     );
-  } else if (methodType === "mab" && experiment.prior_type === "normal") {
+  } else if (methodType === "mab" && experiment.priorType === "normal") {
     const normalExperiment = experiment as MABNormal;
     return (
       <MABNormalCards

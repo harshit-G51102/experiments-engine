@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { MABBeta, BetaParams, MABNormal, GaussianParams } from "../../types";
 import { motion, AnimatePresence } from "framer-motion";
 import {

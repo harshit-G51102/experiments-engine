@@ -20,7 +20,6 @@ const createNewExperiment = async ({
     | MABExperimentStateBeta
     | ABExperimentState
     | CMABExperimentState;
-  let convertedData = null;
 
   if (experimentData.methodType == "mab") {
     endpoint = "/mab/";
@@ -29,36 +28,24 @@ const createNewExperiment = async ({
     } else {
       newExperimentData = experimentData as MABExperimentStateNormal;
     }
-    const { methodType, ...rest } = newExperimentData;
-    convertedData = {
-      name: rest.name,
-      description: rest.description,
-      reward_type: rest.rewardType,
-      prior_type: rest.priorType,
-      arms: rest.arms,
-      notifications: rest.notifications,
-    };
   } else if (experimentData.methodType == "ab") {
     newExperimentData = experimentData as ABExperimentState;
     endpoint = "/ab/";
-    const { methodType, ...rest } = newExperimentData;
-    convertedData = { ...rest };
   } else if (experimentData.methodType == "cmab") {
     newExperimentData = experimentData as CMABExperimentState;
     endpoint = "/contextual_mab/";
-    const { methodType, ...rest } = newExperimentData;
-    convertedData = {
-      name: rest.name,
-      description: rest.description,
-      reward_type: rest.rewardType,
-      prior_type: rest.priorType,
-      arms: rest.arms,
-      notifications: rest.notifications,
-      contexts: rest.contexts,
-    };
   } else {
     throw new Error("Invalid experiment type");
   }
+
+  const convertedData = {
+    name: newExperimentData.name,
+    description: newExperimentData.description,
+    reward_type: newExperimentData.rewardType,
+    prior_type: newExperimentData.priorType,
+    arms: newExperimentData.arms,
+    notifications: newExperimentData.notifications,
+  };
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -69,10 +56,14 @@ const createNewExperiment = async ({
       },
     });
     return response.data;
-  } catch (error: any) {
-    throw new Error(`Error creating new experiment: ${error.message}`);
-  }
-};
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(`Error creating new experiment: ${error.message}`);
+    } else {
+      throw new Error("Error creating new experiment");
+    }
+}
+}
 
 const getAllMABExperiments = async (token: string | null) => {
   try {
@@ -82,8 +73,12 @@ const getAllMABExperiments = async (token: string | null) => {
       },
     });
     return response.data;
-  } catch (error: any) {
-    throw new Error(`Error fetching all experiments: ${error.message}`);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(`Error fetching all experiments: ${error.message}`);
+    } else {
+      throw new Error("Error fetching all experiments");
+    }
   }
 };
 
@@ -95,8 +90,12 @@ const getAllCMABExperiments = async (token: string | null) => {
       },
     });
     return response.data;
-  } catch (error: any) {
-    throw new Error(`Error fetching all experiments: ${error.message}`);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(`Error fetching all experiments: ${error.message}`);
+    } else {
+      throw new Error("Error fetching all experiments");
+    }
   }
 };
 

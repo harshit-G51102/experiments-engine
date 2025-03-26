@@ -17,20 +17,25 @@ import { PlusIcon } from "@heroicons/react/16/solid";
 import { DividerWithTitle } from "@/components/Dividers";
 import { TrashIcon } from "@heroicons/react/16/solid";
 import { Heading } from "@/components/catalyst/heading";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export default function AddCMABArms({ onValidate }: StepComponentProps) {
   const { experimentState, setExperimentState } = useExperiment();
-  const muInputRefs = useRef<HTMLInputElement[]>([]);
 
-  const { methodType, priorType } = experimentState;
-  const baseArmDesc = {
-    name: "",
-    description: "",
-  };
-  const additionalArmErrors = { mu_init: "", sigma_init: "" };
+  const baseArmDesc = useMemo(
+    () => ({
+      name: "",
+      description: "",
+    }),
+    []
+  );
 
-  const additionalArmDesc = { mu_init: 0, sigma_init: 1 };
+  const additionalArmErrors = useMemo(
+    () => ({ mu_init: "", sigma_init: "" }),
+    []
+  );
+
+  const additionalArmDesc = useMemo(() => ({ mu_init: 0, sigma_init: 1 }), []);
 
   const [errors, setErrors] = useState(() => {
     return experimentState.arms.map(() => {
@@ -38,8 +43,12 @@ export default function AddCMABArms({ onValidate }: StepComponentProps) {
     });
   });
 
-  const arms =
-    methodType === "cmab" ? (experimentState.arms as NewCMABArm[]) : [];
+  const arms = useCallback(() => {
+    if (experimentState.methodType === "cmab") {
+      return experimentState.arms as NewCMABArm[];
+    }
+    return [] as NewCMABArm[];
+  }, [experimentState])();
 
   const defaultArm = { ...baseArmDesc, ...additionalArmDesc };
 
@@ -66,19 +75,21 @@ export default function AddCMABArms({ onValidate }: StepComponentProps) {
         isValid = false;
       }
 
-      if ("sigma_init" in arm && !arm.sigma_init) {
-        newErrors[index].sigma_init = "Std. deviation is required";
-        isValid = false;
+      if ("sigma_init" in arm) {
+        if (!arm.sigma_init) {
+          newErrors[index].sigma_init = "Std. deviation is required";
+          isValid = false;
+        }
+        if (arm.sigma_init < 0) {
+          newErrors[index].sigma_init =
+            "Std deviation should be greater than 0";
+          isValid = false;
+        }
       }
-
-      if ("sigma_init" in arm && arm.sigma_init <= 0) {
-        newErrors[index].sigma_init = "Std deviation should be greater than 0";
-        isValid = false;
-      }
-    }); // Close the forEach loop
+    });
 
     return { isValid, newErrors };
-  }, [arms]);
+  }, [arms, baseArmDesc, additionalArmErrors]);
 
   useEffect(() => {
     const { isValid, newErrors } = validateForm();
@@ -113,7 +124,7 @@ export default function AddCMABArms({ onValidate }: StepComponentProps) {
         arms: convertedArms as typeof experimentState.arms,
       });
     }
-  }, [priorType]); // Only run when prior type changes
+  }, [experimentState, setExperimentState]);
 
   const typeSafeSetExperimentState = (newArms: NewCMABArm[]) => {
     if (experimentState.methodType === "cmab") {

@@ -1,6 +1,5 @@
 import { AreaChart, Area, Tooltip, XAxis, YAxis } from "recharts";
 import { BetaParams, GaussianParams } from "../types";
-import { a } from "framer-motion/client";
 import { gamma } from "mathjs";
 import * as d3 from "d3-scale-chromatic";
 

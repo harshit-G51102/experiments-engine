@@ -14,28 +14,39 @@ import {
   NewMABArmBeta,
   NewMABArmNormal,
   StepComponentProps,
-  NewABArm,
 } from "../../../types";
 import { PlusIcon } from "@heroicons/react/16/solid";
 import { DividerWithTitle } from "@/components/Dividers";
 import { TrashIcon } from "@heroicons/react/16/solid";
 import { Heading } from "@/components/catalyst/heading";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 
 export default function AddMABArms({ onValidate }: StepComponentProps) {
   const { experimentState, setExperimentState } = useExperiment();
-  const muInputRefs = useRef<HTMLInputElement[]>([]);
 
-  const { methodType, priorType, rewardType } = experimentState;
-  const baseArmDesc = {
-    name: "",
-    description: "",
-  };
-  const additionalArmErrors =
-    priorType === "beta" ? { alpha: "", beta: "" } : { mu: "", sigma: "" };
+  const baseArmDesc = useMemo(
+    () => ({
+      name: "",
+      description: "",
+    }),
+    []
+  );
 
-  const additionalArmDesc =
-    priorType === "beta" ? { alpha: 1, beta: 1 } : { mu: 0, sigma: 1 };
+  const additionalArmErrors = useMemo(
+    () =>
+      experimentState.priorType === "beta"
+        ? { alpha: "", beta: "" }
+        : { mu: "", sigma: "" },
+    [experimentState]
+  );
+
+  const additionalArmDesc = useMemo(
+    () =>
+      experimentState.priorType === "beta"
+        ? { alpha: 1, beta: 1 }
+        : { mu: 0, sigma: 1 },
+    [experimentState]
+  );
 
   const [errors, setErrors] = useState(() => {
     return experimentState.arms.map(() => {
@@ -43,12 +54,17 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
     });
   });
 
-  const arms =
-    methodType === "mab" && priorType === "beta"
+  const arms = useCallback(() => {
+    return experimentState.methodType === "mab" &&
+      experimentState.priorType === "beta"
       ? (experimentState.arms as NewMABArmBeta[])
       : (experimentState.arms as NewMABArmNormal[]);
+  }, [experimentState])();
 
-  const defaultArm = { ...baseArmDesc, ...additionalArmDesc };
+  const defaultArm = useMemo(
+    () => ({ ...baseArmDesc, ...additionalArmDesc }),
+    [baseArmDesc, additionalArmDesc]
+  );
 
   const validateForm = useCallback(() => {
     let isValid = true;
@@ -68,44 +84,50 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
         isValid = false;
       }
 
-      if (priorType === "beta") {
-        if ("alpha" in arm && !arm.alpha) {
-          newErrors[index].alpha = "Alpha prior is required";
-          isValid = false;
-        }
-        if ("alpha" in arm && arm.alpha <= 0) {
-          newErrors[index].alpha = "Alpha prior should be greater than 0";
-          isValid = false;
-        }
-
-        if ("beta" in arm && !arm.beta) {
-          newErrors[index].beta = "Beta prior is required";
-          isValid = false;
+      if (experimentState.priorType === "beta") {
+        if ("alpha" in arm) {
+          if (!arm.alpha) {
+            newErrors[index].alpha = "Alpha prior is required";
+            isValid = false;
+          }
+          if (arm.alpha <= 0) {
+            newErrors[index].alpha = "Alpha prior should be greater than 0";
+            isValid = false;
+          }
         }
 
-        if ("beta" in arm && arm.beta <= 0) {
-          newErrors[index].beta = "Beta prior should be greater than 0";
-          isValid = false;
+        if ("beta" in arm) {
+          if (!arm.beta) {
+            newErrors[index].beta = "Beta prior is required";
+            isValid = false;
+          }
+
+          if (arm.beta <= 0) {
+            newErrors[index].beta = "Beta prior should be greater than 0";
+            isValid = false;
+          }
         }
-      } else if (priorType === "normal") {
+      } else if (experimentState.priorType === "normal") {
         if ("mu" in arm && typeof arm.mu !== "number") {
           newErrors[index].mu = "Mean value is required";
           isValid = false;
         }
 
-        if ("sigma" in arm && !arm.sigma) {
-          newErrors[index].sigma = "Std. deviation is required";
-          isValid = false;
-        }
+        if ("sigma" in arm) {
+          if (!arm.sigma) {
+            newErrors[index].sigma = "Std. deviation is required";
+            isValid = false;
+          }
 
-        if ("sigma" in arm && arm.sigma <= 0) {
-          newErrors[index].sigma = "Std deviation should be greater than 0";
-          isValid = false;
+          if (arm.sigma <= 0) {
+            newErrors[index].sigma = "Std deviation should be greater than 0";
+            isValid = false;
+          }
         }
       }
     });
     return { isValid, newErrors };
-  }, [arms]);
+  }, [arms, experimentState, baseArmDesc, additionalArmErrors]);
 
   useEffect(() => {
     const { isValid, newErrors } = validateForm();
@@ -124,50 +146,31 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
 
   useEffect(() => {
     if (experimentState.methodType === "mab") {
-      const convertedArms = experimentState.arms.map((arm) => {
-        const newArm = {
-          name: arm.name || "",
-          description: arm.description || "",
-        };
-        if (methodType == "mab" && priorType === "beta") {
-          return {
-            ...newArm,
-            alpha: "alpha" in arm ? arm.alpha : 1,
-            beta: "beta" in arm ? arm.beta : 1,
-          } as NewMABArmBeta;
-        } else if (methodType == "mab" && priorType === "normal") {
-          return {
-            ...newArm,
-            mu: "mu" in arm ? arm.mu : 0,
-            sigma: "sigma" in arm ? arm.sigma : 1,
-          } as NewMABArmNormal;
-        } else {
-          return {
-            ...newArm,
-            mean_prior: "mean_prior" in arm ? arm.mean_prior : 0,
-            stdDev_prior: "stdDev_prior" in arm ? arm.stdDev_prior : 1,
-          } as NewABArm;
-        }
-      });
-
       // Update experiment state with converted arms
-      setExperimentState({
-        ...experimentState,
-        arms: convertedArms as typeof experimentState.arms,
-      });
+      if (experimentState.priorType === "beta") {
+        setExperimentState({
+          ...experimentState,
+          arms: experimentState.arms as NewMABArmBeta[],
+        });
+      } else if (experimentState.priorType === "normal") {
+        setExperimentState({
+          ...experimentState,
+          arms: experimentState.arms as NewMABArmNormal[],
+        });
+      }
     }
-  }, [priorType]); // Only run when prior type changes
+  }, [experimentState, arms, setExperimentState]); // Only run when prior type changes
 
   const typeSafeSetExperimentState = (
     newArms: NewMABArmBeta[] | NewMABArmNormal[]
   ) => {
     if (experimentState.methodType === "mab") {
-      if (priorType === "beta") {
+      if (experimentState.priorType === "beta") {
         setExperimentState({
           ...experimentState,
           arms: newArms as NewMABArmBeta[],
         } as MABExperimentStateBeta);
-      } else if (priorType === "normal") {
+      } else if (experimentState.priorType === "normal") {
         setExperimentState({
           ...experimentState,
           arms: newArms as NewMABArmNormal[],
@@ -189,7 +192,7 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
             onClick={() =>
               setExperimentState((prevState) => {
                 if (prevState.methodType === "mab") {
-                  if (priorType === "beta") {
+                  if (experimentState.priorType === "beta") {
                     return {
                       ...prevState,
                       arms: [
@@ -197,7 +200,7 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                         defaultArm as NewMABArmBeta,
                       ],
                     };
-                  } else if (priorType === "normal") {
+                  } else if (experimentState.priorType === "normal") {
                     return {
                       ...prevState,
                       arms: [
@@ -224,7 +227,7 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
             outline
             onClick={() => {
               if (experimentState.methodType === "mab") {
-                priorType === "beta"
+                experimentState.priorType === "beta"
                   ? setExperimentState({
                       ...experimentState,
                       arms: experimentState.arms.slice(
@@ -232,7 +235,7 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                         experimentState.arms.length - 1
                       ) as NewMABArmBeta[],
                     })
-                  : priorType === "normal"
+                  : experimentState.priorType === "normal"
                   ? setExperimentState({
                       ...experimentState,
                       arms: experimentState.arms.slice(
@@ -278,11 +281,11 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                         onChange={(e) => {
                           const newArms = [...arms];
                           newArms[index].name = e.target.value;
-                          if (priorType === "beta") {
+                          if (experimentState.priorType === "beta") {
                             typeSafeSetExperimentState(
                               newArms as NewMABArmBeta[]
                             );
-                          } else if (priorType === "normal") {
+                          } else if (experimentState.priorType === "normal") {
                             typeSafeSetExperimentState(
                               newArms as NewMABArmNormal[]
                             );
@@ -312,11 +315,11 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                         onChange={(e) => {
                           const newArms = [...arms];
                           newArms[index].description = e.target.value;
-                          if (priorType === "beta") {
+                          if (experimentState.priorType === "beta") {
                             typeSafeSetExperimentState(
                               newArms as NewMABArmBeta[]
                             );
-                          } else if (priorType === "normal") {
+                          } else if (experimentState.priorType === "normal") {
                             typeSafeSetExperimentState(
                               newArms as NewMABArmNormal[]
                             );
@@ -334,7 +337,7 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                   </div>
                 </Field>
               </div>
-              {priorType === "beta" && (
+              {experimentState.priorType === "beta" && (
                 <div className="basis-1/2 grow">
                   <Field className="flex flex-col mb-4">
                     <div className="flex flex-row">
@@ -350,14 +353,15 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                           name={`arm-${index + 1}-alpha`}
                           placeholder="Enter an integer as the prior for the alpha parameter"
                           value={
-                            priorType === "beta" && "alpha" in arm
+                            experimentState.priorType === "beta" &&
+                            "alpha" in arm
                               ? arm.alpha || ""
                               : ""
                           }
                           onChange={(e) => {
                             const newArms = [...arms];
                             if (
-                              priorType === "beta" &&
+                              experimentState.priorType === "beta" &&
                               "alpha" in newArms[index]
                             ) {
                               newArms[index].alpha = parseInt(e.target.value);
@@ -391,14 +395,15 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                           name={`arm-${index + 1}-beta`}
                           placeholder="Enter an integer as the prior for the beta parameter"
                           value={
-                            priorType === "beta" && "beta" in arm
+                            experimentState.priorType === "beta" &&
+                            "beta" in arm
                               ? arm.beta || ""
                               : ""
                           }
                           onChange={(e) => {
                             const newArms = [...arms];
                             if (
-                              priorType === "beta" &&
+                              experimentState.priorType === "beta" &&
                               "beta" in newArms[index]
                             ) {
                               newArms[index].beta = parseInt(e.target.value);
@@ -420,7 +425,7 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                   </Field>
                 </div>
               )}
-              {priorType === "normal" && (
+              {experimentState.priorType === "normal" && (
                 <div className="basis-1/2 grow">
                   <Field className="flex flex-col mb-4">
                     <div className="flex flex-row">
@@ -438,7 +443,8 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                           placeholder="Enter a float as mean for the prior"
                           defaultValue={0}
                           value={
-                            priorType === "normal" && "mu" in arm
+                            experimentState.priorType === "normal" &&
+                            "mu" in arm
                               ? arm.mu === 0
                                 ? "0"
                                 : arm.mu || ""
@@ -447,7 +453,7 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                           onChange={(e) => {
                             const newArms = [...arms];
                             if (
-                              priorType === "normal" &&
+                              experimentState.priorType === "normal" &&
                               "mu" in newArms[index]
                             ) {
                               newArms[index].mu = parseFloat(e.target.value);
@@ -483,7 +489,8 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                           defaultValue={1}
                           placeholder="Enter a float as standard deviation for the prior"
                           value={
-                            priorType === "normal" && "sigma" in arm
+                            experimentState.priorType === "normal" &&
+                            "sigma" in arm
                               ? arm.sigma === 0
                                 ? "0"
                                 : arm.sigma || ""
@@ -492,7 +499,7 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                           onChange={(e) => {
                             const newArms = [...arms];
                             if (
-                              priorType === "normal" &&
+                              experimentState.priorType === "normal" &&
                               "sigma" in newArms[index]
                             ) {
                               newArms[index].sigma = parseFloat(e.target.value);

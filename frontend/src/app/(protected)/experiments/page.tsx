@@ -1,5 +1,5 @@
 "use client";
-import React, { use, useEffect } from "react";
+import React, { useEffect } from "react";
 import EmptyPage from "./components/EmptyPage";
 import { getAllMABExperiments, getAllCMABExperiments } from "./api";
 import { MABBeta, MABNormal, CMAB, MethodType } from "./types";
@@ -9,7 +9,7 @@ import FloatingAddButton from "./components/FloatingAddButton";
 import { Link } from "@/components/catalyst/link";
 import { useAuth } from "@/utils/auth";
 import { DividerWithTitle } from "@/components/Dividers";
-import { set } from "react-hook-form";
+
 
 export default function Experiments() {
   const [haveExperiments, setHaveExperiments] = React.useState(false);
@@ -20,11 +20,12 @@ export default function Experiments() {
   const { token } = useAuth();
 
   useEffect(() => {
+    if (!token) return;
     setLoading(true);
-    getAllMABExperiments(token!).then((data) => {
+    getAllMABExperiments(token).then((data) => {
       setMABExperiments(data);
     });
-    getAllCMABExperiments(token!).then((data) => {
+    getAllCMABExperiments(token).then((data) => {
       setCMABExperiments(data);
     });
     setLoading(false);

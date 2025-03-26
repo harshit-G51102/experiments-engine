@@ -1,34 +1,10 @@
 import { useCallback, useState, useEffect } from "react";
 import { Radio, RadioField, RadioGroup } from "@/components/catalyst/radio";
-import {
-  Field,
-  FieldGroup,
-  Fieldset,
-  Label,
-  Description,
-} from "@/components/catalyst/fieldset";
-import {
-  PriorType,
-  RewardType,
-  StepComponentProps,
-  StepValidation,
-} from "../../../types";
+import { Fieldset, Label, Description } from "@/components/catalyst/fieldset";
+import { PriorType, RewardType, StepComponentProps } from "../../../types";
 import { useExperiment } from "../AddExperimentContext";
 import { Heading } from "@/components/catalyst/heading";
 import { DividerWithTitle } from "@/components/Dividers";
-
-// TODO: not clean to add descriptions here -- should move to types or somewhere else
-const priorTypeInfo: Record<PriorType, { name: string; description: string }> =
-  {
-    beta: {
-      name: "Beta Prior",
-      description: "Best for binary outcomes",
-    },
-    normal: {
-      name: "Normal Prior",
-      description: "Best for real-valued outcomes",
-    },
-  };
 
 export default function MABPriorRewardSelection({
   onValidate,

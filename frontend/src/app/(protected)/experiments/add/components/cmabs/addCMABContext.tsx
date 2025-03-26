@@ -3,7 +3,6 @@ import {
   FieldGroup,
   Fieldset,
   Label,
-  Description,
 } from "@/components/catalyst/fieldset";
 import { Button } from "@/components/catalyst/button";
 import { Input } from "@/components/catalyst/input";
@@ -11,7 +10,6 @@ import { Textarea } from "@/components/catalyst/textarea";
 import { useExperiment } from "../AddExperimentContext";
 import {
   CMABExperimentState,
-  NewCMABArm,
   StepComponentProps,
   ContextType,
   NewContext,
@@ -20,22 +18,23 @@ import { PlusIcon } from "@heroicons/react/16/solid";
 import { DividerWithTitle } from "@/components/Dividers";
 import { TrashIcon } from "@heroicons/react/16/solid";
 import { Heading } from "@/components/catalyst/heading";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Radio, RadioGroup, RadioField } from "@/components/catalyst/radio";
 
 export default function AddCMABContext({ onValidate }: StepComponentProps) {
   const { experimentState, setExperimentState } = useExperiment();
-  const { methodType } = experimentState;
-  const muInputRefs = useRef<HTMLInputElement[]>([]);
 
-  const defaultContext = {
-    name: "",
-    description: "",
-    value_type: "",
-  };
+  const defaultContext = useMemo(
+    () => ({
+      name: "",
+      description: "",
+      value_type: "",
+    }),
+    []
+  );
 
   useEffect(() => {
-    if (methodType === "cmab") {
+    if (experimentState.methodType === "cmab") {
       if (
         !experimentState.contexts ||
         !Array.isArray(experimentState.contexts) ||
@@ -48,11 +47,11 @@ export default function AddCMABContext({ onValidate }: StepComponentProps) {
         });
       }
     }
-  }, [methodType]);
+  }, [experimentState, defaultContext, setExperimentState]);
 
   const [errors, setErrors] = useState(() => {
     if (
-      methodType === "cmab" &&
+      experimentState.methodType === "cmab" &&
       experimentState.contexts &&
       Array.isArray(experimentState.contexts)
     ) {
@@ -64,10 +63,11 @@ export default function AddCMABContext({ onValidate }: StepComponentProps) {
     }
   });
 
-  const contexts =
-    methodType === "cmab" && experimentState.contexts
+  const contexts = useCallback((): NewContext[] => {
+    return experimentState.methodType === "cmab" && experimentState.contexts
       ? (experimentState.contexts as NewContext[])
       : [];
+  }, [experimentState])();
 
   const validateForm = useCallback(() => {
     let isValid = true;
@@ -93,7 +93,7 @@ export default function AddCMABContext({ onValidate }: StepComponentProps) {
     });
 
     return { isValid, newErrors };
-  }, [contexts]);
+  }, [contexts, defaultContext]);
 
   useEffect(() => {
     const { isValid, newErrors } = validateForm();
@@ -123,7 +123,7 @@ export default function AddCMABContext({ onValidate }: StepComponentProps) {
         contexts: convertedContexts as NewContext[],
       });
     }
-  }, [methodType]);
+  }, [experimentState, setExperimentState]);
 
   const typeSafeSetExperimentState = (newContexts: NewContext[]) => {
     if (experimentState.methodType === "cmab") {
