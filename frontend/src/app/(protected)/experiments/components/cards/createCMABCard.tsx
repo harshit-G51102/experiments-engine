@@ -1,26 +1,25 @@
-import { useState } from 'react';
-import { CMAB } from '../../types';
+import { useState } from "react";
+import { CMAB } from "../../types";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-  } from "@/components/ui/card";
-
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 
 export function CMABCards({
-    experiment,
-    isExpanded,
-    setIsExpanded }:
-    { experiment: CMAB,
-      isExpanded: boolean,
-      setIsExpanded: (isExpanded: boolean) => void }) {
-
+  experiment,
+  isExpanded,
+  setIsExpanded,
+}: {
+  experiment: CMAB;
+  isExpanded: boolean;
+  setIsExpanded: (isExpanded: boolean) => void;
+}) {
   const { experiment_id, name, is_active, arms, contexts } = { ...experiment };
   const toggleExpand = () => setIsExpanded(!isExpanded);
-
 
   return (
     <div className="flex items-center justify-center">
@@ -53,7 +52,9 @@ export function CMABCards({
         }}
       >
         <Card
-          className={`${isExpanded ? null : "cursor-pointer"} z-60 w-full max-w-[800px] dark:bg-black
+          className={`${
+            isExpanded ? null : "cursor-pointer"
+          } z-60 w-full max-w-[800px] dark:bg-black
                       dark:border-zinc-400 border-zinc-800 dark:shadown-zinc-600`}
           onClick={(e) => {
             e.stopPropagation();
@@ -61,7 +62,6 @@ export function CMABCards({
             isExpanded ? null : toggleExpand();
           }}
         >
-
           <CardHeader className="flex flex-row items-start align-top justify-between space-y-0 pb-2">
             <div className="flex flex-col space-y-1">
               <CardTitle className="text-2xl font-bold">{name}</CardTitle>
@@ -109,9 +109,9 @@ export function CMABCards({
                       <div className="flex-1 h-4 bg-secondary rounded-full overflow-hidden">
                         <div
                           className="h-full bg-primary"
-                        //   style={{
-                        //    width: `${maxValue > 0 ? (successes[index] / maxValue) * 100 : 0}%`,
-                        //   }}
+                          //   style={{
+                          //    width: `${maxValue > 0 ? (successes[index] / maxValue) * 100 : 0}%`,
+                          //   }}
                         />
                       </div>
                       <div className="w-12 text-right text-sm">
@@ -119,23 +119,23 @@ export function CMABCards({
                       </div>
                     </div>
                   ))}
-                  {!isExpanded &&
-                   contexts &&
-                   contexts.map((context, index) => (
-                        <div key={index} className="flex items-center">
-                        <div className="w-24 text-sm">{context.name}</div>
-                        <div className="flex-1 h-4 bg-secondary rounded-full overflow-hidden">
-                            <div
-                            className="h-full bg-primary"
-                            //   style={{
-                            //    width: `${maxValue > 0 ? (successes[index] / maxValue) * 100 : 0}%`,
-                            //   }}
-                            />
-                        </div>
-                        <div className="w-12 text-right text-sm">
-                            {/* {successes[index]}% */}
-                        </div>
-                        </div>
+                {!isExpanded &&
+                  contexts &&
+                  contexts.map((context, index) => (
+                    <div key={index} className="flex items-center">
+                      <div className="w-24 text-sm">{context.name}</div>
+                      <div className="flex-1 h-4 bg-secondary rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary"
+                          //   style={{
+                          //    width: `${maxValue > 0 ? (successes[index] / maxValue) * 100 : 0}%`,
+                          //   }}
+                        />
+                      </div>
+                      <div className="w-12 text-right text-sm">
+                        {/* {successes[index]}% */}
+                      </div>
+                    </div>
                   ))}
               </div>
               <div className="flex flex-row justify-between mt-4">

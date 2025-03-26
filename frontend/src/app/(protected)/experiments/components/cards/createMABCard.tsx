@@ -1,44 +1,46 @@
-import { useState } from 'react';
-import { MABBeta, BetaParams, MABNormal, GaussianParams } from '../../types';
+import { useState } from "react";
+import { MABBeta, BetaParams, MABNormal, GaussianParams } from "../../types";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-  } from "@/components/ui/card";
-  import { BetaLineChart, NormalLineChart } from "../Charts";
-
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { BetaLineChart, NormalLineChart } from "../Charts";
 
 export function MABBetaCards({
-    experiment,
-    successes,
-    failures,
-    isExpanded,
-    setIsExpanded }:
-    { experiment: MABBeta,
-      successes: number[],
-      failures: number[],
-      isExpanded: boolean,
-      setIsExpanded: (isExpanded: boolean) => void }) {
-
+  experiment,
+  successes,
+  failures,
+  isExpanded,
+  setIsExpanded,
+}: {
+  experiment: MABBeta;
+  successes: number[];
+  failures: number[];
+  isExpanded: boolean;
+  setIsExpanded: (isExpanded: boolean) => void;
+}) {
   const { experiment_id, name, is_active, arms } = { ...experiment };
   const toggleExpand = () => setIsExpanded(!isExpanded);
 
   const priors: BetaParams[] = arms.map((arm) => ({
     name: arm.name,
     alpha: arm.alpha,
-    beta: arm.beta
+    beta: arm.beta,
   }));
 
   const posteriors: BetaParams[] = arms.map((arm, index) => ({
     name: arm.name,
     alpha: arm.alpha + successes[index],
-    beta: arm.beta + failures[index]
+    beta: arm.beta + failures[index],
   }));
 
-  const maxValue = Math.max(...arms.map((d, index) => successes[index] + failures[index]));
+  const maxValue = Math.max(
+    ...arms.map((d, index) => successes[index] + failures[index])
+  );
 
   return (
     <div className="flex items-center justify-center">
@@ -71,7 +73,9 @@ export function MABBetaCards({
         }}
       >
         <Card
-          className={`${isExpanded ? null : "cursor-pointer"} z-60 w-full max-w-[800px] dark:bg-black
+          className={`${
+            isExpanded ? null : "cursor-pointer"
+          } z-60 w-full max-w-[800px] dark:bg-black
                       dark:border-zinc-400 border-zinc-800 dark:shadown-zinc-600`}
           onClick={(e) => {
             e.stopPropagation();
@@ -79,7 +83,6 @@ export function MABBetaCards({
             isExpanded ? null : toggleExpand();
           }}
         >
-
           <CardHeader className="flex flex-row items-start align-top justify-between space-y-0 pb-2">
             <div className="flex flex-col space-y-1">
               <CardTitle className="text-2xl font-bold">{name}</CardTitle>
@@ -128,7 +131,11 @@ export function MABBetaCards({
                         <div
                           className="h-full bg-primary"
                           style={{
-                           width: `${maxValue > 0 ? (successes[index] / maxValue) * 100 : 0}%`,
+                            width: `${
+                              maxValue > 0
+                                ? (successes[index] / maxValue) * 100
+                                : 0
+                            }%`,
                           }}
                         />
                       </div>
@@ -143,8 +150,10 @@ export function MABBetaCards({
                   Last Run: 2 days ago
                 </div>
                 {isExpanded && (
-                    <div className="uppercase text-xs dark:text-neutral-400 font-medium mt-4">
-                    No. of samples: {successes.reduce((a, b) => a + b, 0) + failures.reduce((a, b) => a + b, 0)}
+                  <div className="uppercase text-xs dark:text-neutral-400 font-medium mt-4">
+                    No. of samples:{" "}
+                    {successes.reduce((a, b) => a + b, 0) +
+                      failures.reduce((a, b) => a + b, 0)}
                   </div>
                 )}
               </div>
@@ -156,32 +165,32 @@ export function MABBetaCards({
   );
 }
 
-
 export function MABNormalCards({
-    experiment,
-    mu_final, // TODO: this will not work once experiments updates the mu param
-    sigma_final, // TODO: this will not work once experiments updates the mu param
-    isExpanded,
-    setIsExpanded }:
-    { experiment: MABNormal,
-      mu_final: number[],
-      sigma_final: number[],
-      isExpanded: boolean,
-      setIsExpanded: (isExpanded: boolean) => void }) {
-
+  experiment,
+  mu_final, // TODO: this will not work once experiments updates the mu param
+  sigma_final, // TODO: this will not work once experiments updates the mu param
+  isExpanded,
+  setIsExpanded,
+}: {
+  experiment: MABNormal;
+  mu_final: number[];
+  sigma_final: number[];
+  isExpanded: boolean;
+  setIsExpanded: (isExpanded: boolean) => void;
+}) {
   const { experiment_id, name, is_active, arms } = { ...experiment };
   const toggleExpand = () => setIsExpanded(!isExpanded);
 
   const priors: GaussianParams[] = arms.map((arm) => ({
     name: arm.name,
     mu: arm.mu,
-    sigma: arm.sigma
+    sigma: arm.sigma,
   }));
 
   const posteriors: GaussianParams[] = arms.map((arm, index) => ({
     name: arm.name,
     mu: mu_final[index],
-    sigma: sigma_final[index]
+    sigma: sigma_final[index],
   }));
 
   return (
@@ -215,7 +224,9 @@ export function MABNormalCards({
         }}
       >
         <Card
-          className={`${isExpanded ? null : "cursor-pointer"} z-60 w-full max-w-[800px] dark:bg-black
+          className={`${
+            isExpanded ? null : "cursor-pointer"
+          } z-60 w-full max-w-[800px] dark:bg-black
                       dark:border-zinc-400 border-zinc-800 dark:shadown-zinc-600`}
           onClick={(e) => {
             e.stopPropagation();
@@ -223,7 +234,6 @@ export function MABNormalCards({
             isExpanded ? null : toggleExpand();
           }}
         >
-
           <CardHeader className="flex flex-row items-start align-top justify-between space-y-0 pb-2">
             <div className="flex flex-col space-y-1">
               <CardTitle className="text-2xl font-bold">{name}</CardTitle>
@@ -271,9 +281,9 @@ export function MABNormalCards({
                       <div className="flex-1 h-4 bg-secondary rounded-full overflow-hidden">
                         <div
                           className="h-full bg-primary"
-                        //   style={{
-                        //    width: `${maxValue > 0 ? (successes[index] / maxValue) * 100 : 0}%`,
-                        //   }}
+                          //   style={{
+                          //    width: `${maxValue > 0 ? (successes[index] / maxValue) * 100 : 0}%`,
+                          //   }}
                         />
                       </div>
                       <div className="w-12 text-right text-sm">
@@ -287,7 +297,7 @@ export function MABNormalCards({
                   Last Run: 2 days ago
                 </div>
                 {isExpanded && (
-                    <div className="uppercase text-xs dark:text-neutral-400 font-medium mt-4">
+                  <div className="uppercase text-xs dark:text-neutral-400 font-medium mt-4">
                     No. of samples: 100
                   </div>
                 )}

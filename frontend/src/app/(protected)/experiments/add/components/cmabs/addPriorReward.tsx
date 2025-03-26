@@ -1,58 +1,58 @@
-"use client"
+"use client";
 
-import { useCallback, useState, useEffect } from "react"
-import { Radio, RadioField, RadioGroup } from "@/components/catalyst/radio"
-import { Fieldset, Label, Description } from "@/components/catalyst/fieldset"
-import type { RewardType, StepComponentProps } from "../../../types"
-import { useExperiment } from "../AddExperimentContext"
-import { Heading } from "@/components/catalyst/heading"
-import { DividerWithTitle } from "@/components/Dividers"
+import { useCallback, useState, useEffect } from "react";
+import { Radio, RadioField, RadioGroup } from "@/components/catalyst/radio";
+import { Fieldset, Label, Description } from "@/components/catalyst/fieldset";
+import type { RewardType, StepComponentProps } from "../../../types";
+import { useExperiment } from "../AddExperimentContext";
+import { Heading } from "@/components/catalyst/heading";
+import { DividerWithTitle } from "@/components/Dividers";
 
-export default function CMABPriorRewardSelection({ onValidate }: StepComponentProps) {
-  const { experimentState, setExperimentState } = useExperiment()
+export default function CMABPriorRewardSelection({
+  onValidate,
+}: StepComponentProps) {
+  const { experimentState, setExperimentState } = useExperiment();
   const [errors, setErrors] = useState({
     priorType: "",
     rewardType: "",
-  })
+  });
 
   const validateForm = useCallback(() => {
-    let isValid = true
+    let isValid = true;
     const newErrors = {
       priorType: "",
       rewardType: "",
-    }
+    };
 
     // Prior type is fixed as "normal" for CMAB, so we don't need to validate it
     if (!experimentState.rewardType) {
-      newErrors.rewardType = "Please select a reward type"
-      isValid = false
+      newErrors.rewardType = "Please select a reward type";
+      isValid = false;
     }
 
-    return { isValid, newErrors }
-  }, [experimentState.rewardType])
-
+    return { isValid, newErrors };
+  }, [experimentState.rewardType]);
 
   const setRewardType = (value: keyof RewardType) => {
     setExperimentState((prevState) => ({
       ...prevState,
       rewardType: value as RewardType,
-    }))
-  }
-
+    }));
+  };
 
   useEffect(() => {
-    const { isValid, newErrors } = validateForm()
-    setErrors(newErrors)
+    const { isValid, newErrors } = validateForm();
+    setErrors(newErrors);
 
     if (onValidate) {
       onValidate({
         isValid,
         errors: newErrors,
-      })
+      });
     }
 
-    console.log("Validation state:", { isValid, errors: newErrors })
-  }, [validateForm, onValidate, experimentState])
+    console.log("Validation state:", { isValid, errors: newErrors });
+  }, [validateForm, onValidate, experimentState]);
 
   return (
     <div>
@@ -61,13 +61,19 @@ export default function CMABPriorRewardSelection({ onValidate }: StepComponentPr
       </div>
       <Fieldset aria-label="CMAB Parameters" className="pt-6">
         <DividerWithTitle title="Prior Type" />
-        <RadioGroup name="priorType" defaultValue="normal" value={experimentState.priorType}>
+        <RadioGroup
+          name="priorType"
+          defaultValue="normal"
+          value={experimentState.priorType}
+        >
           <div className="mb-4" />
           <Label>Select prior type for the experiment</Label>
           <RadioField>
             <Radio id="normal" value="normal" />
             <Label htmlFor="normal">Normal</Label>
-            <Description>Gaussian distribution; best for real-valued outcomes.</Description>
+            <Description>
+              Gaussian distribution; best for real-valued outcomes.
+            </Description>
           </RadioField>
         </RadioGroup>
         {errors.priorType ? (
@@ -88,13 +94,19 @@ export default function CMABPriorRewardSelection({ onValidate }: StepComponentPr
           <RadioField>
             <Radio id="real-valued" value="real-valued" />
             <Label htmlFor="real-valued">Real-valued</Label>
-            <Description>E.g. how long someone engaged with your app, how long did onboarding take, etc.</Description>
+            <Description>
+              E.g. how long someone engaged with your app, how long did
+              onboarding take, etc.
+            </Description>
           </RadioField>
 
           <RadioField>
             <Radio id="binary" value="binary" />
             <Label htmlFor="binary">Binary</Label>
-            <Description>E.g. whether a user clicked on a button, whether a user converted, etc.</Description>
+            <Description>
+              E.g. whether a user clicked on a button, whether a user converted,
+              etc.
+            </Description>
           </RadioField>
         </RadioGroup>
         {errors.rewardType ? (
@@ -104,5 +116,5 @@ export default function CMABPriorRewardSelection({ onValidate }: StepComponentPr
         )}
       </Fieldset>
     </div>
-  )
+  );
 }

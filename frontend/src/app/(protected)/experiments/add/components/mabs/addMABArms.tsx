@@ -8,7 +8,14 @@ import { Button } from "@/components/catalyst/button";
 import { Input } from "@/components/catalyst/input";
 import { Textarea } from "@/components/catalyst/textarea";
 import { useExperiment } from "../AddExperimentContext";
-import { MABExperimentStateNormal, MABExperimentStateBeta, NewMABArmBeta, NewMABArmNormal, StepComponentProps, NewABArm } from "../../../types";
+import {
+  MABExperimentStateNormal,
+  MABExperimentStateBeta,
+  NewMABArmBeta,
+  NewMABArmNormal,
+  StepComponentProps,
+  NewABArm,
+} from "../../../types";
 import { PlusIcon } from "@heroicons/react/16/solid";
 import { DividerWithTitle } from "@/components/Dividers";
 import { TrashIcon } from "@heroicons/react/16/solid";
@@ -25,14 +32,10 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
     description: "",
   };
   const additionalArmErrors =
-    priorType === "beta"
-      ? { alpha: "", beta: "" }
-      : { mu: "", sigma: "" }
+    priorType === "beta" ? { alpha: "", beta: "" } : { mu: "", sigma: "" };
 
   const additionalArmDesc =
-    priorType === "beta"
-      ? { alpha: 1, beta: 1 }
-      : { mu: 0, sigma: 1 }
+    priorType === "beta" ? { alpha: 1, beta: 1 } : { mu: 0, sigma: 1 };
 
   const [errors, setErrors] = useState(() => {
     return experimentState.arms.map(() => {
@@ -41,11 +44,9 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
   });
 
   const arms =
-    methodType === "mab" &&
-    priorType === "beta"
+    methodType === "mab" && priorType === "beta"
       ? (experimentState.arms as NewMABArmBeta[])
-      : (experimentState.arms as NewMABArmNormal[])
-
+      : (experimentState.arms as NewMABArmNormal[]);
 
   const defaultArm = { ...baseArmDesc, ...additionalArmDesc };
 
@@ -123,30 +124,30 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
 
   useEffect(() => {
     if (experimentState.methodType === "mab") {
-      const convertedArms = experimentState.arms.map(arm => {
+      const convertedArms = experimentState.arms.map((arm) => {
         const newArm = {
           name: arm.name || "",
-          description: arm.description || ""
+          description: arm.description || "",
         };
-      if (methodType == "mab" && priorType === "beta") {
-        return {
-          ...newArm,
-          alpha: "alpha" in arm ? arm.alpha : 1,
-          beta: "beta" in arm ? arm.beta : 1
-        } as NewMABArmBeta;
-      } else if (methodType == "mab" && priorType === "normal") {
-        return {
-          ...newArm,
-          mu: "mu" in arm ? arm.mu : 0,
-          sigma: "sigma" in arm ? arm.sigma : 1
-        } as NewMABArmNormal;
-      } else {
-        return {
-          ...newArm,
-          mean_prior: "mean_prior" in arm ? arm.mean_prior : 0,
-          stdDev_prior: "stdDev_prior" in arm ? arm.stdDev_prior : 1
-        } as NewABArm;
-      }
+        if (methodType == "mab" && priorType === "beta") {
+          return {
+            ...newArm,
+            alpha: "alpha" in arm ? arm.alpha : 1,
+            beta: "beta" in arm ? arm.beta : 1,
+          } as NewMABArmBeta;
+        } else if (methodType == "mab" && priorType === "normal") {
+          return {
+            ...newArm,
+            mu: "mu" in arm ? arm.mu : 0,
+            sigma: "sigma" in arm ? arm.sigma : 1,
+          } as NewMABArmNormal;
+        } else {
+          return {
+            ...newArm,
+            mean_prior: "mean_prior" in arm ? arm.mean_prior : 0,
+            stdDev_prior: "stdDev_prior" in arm ? arm.stdDev_prior : 1,
+          } as NewABArm;
+        }
       });
 
       // Update experiment state with converted arms
@@ -157,7 +158,9 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
     }
   }, [priorType]); // Only run when prior type changes
 
-  const typeSafeSetExperimentState = (newArms: NewMABArmBeta[] | NewMABArmNormal[]) => {
+  const typeSafeSetExperimentState = (
+    newArms: NewMABArmBeta[] | NewMABArmNormal[]
+  ) => {
     if (experimentState.methodType === "mab") {
       if (priorType === "beta") {
         setExperimentState({
@@ -171,10 +174,10 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
         } as MABExperimentStateNormal);
       }
     } else {
-      console.error("Method type is not MAB")
-      throw new Error("Method type is not MAB")
+      console.error("Method type is not MAB");
+      throw new Error("Method type is not MAB");
     }
-  }
+  };
 
   return (
     <div>
@@ -335,7 +338,10 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                 <div className="basis-1/2 grow">
                   <Field className="flex flex-col mb-4">
                     <div className="flex flex-row">
-                      <Label className="basis-1/4 mt-3 font-medium" htmlFor="alpha">
+                      <Label
+                        className="basis-1/4 mt-3 font-medium"
+                        htmlFor="alpha"
+                      >
                         Alpha prior
                       </Label>
                       <div className="basis-3/4 flex flex-col">
@@ -373,7 +379,10 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                   </Field>
                   <Field className="flex flex-col">
                     <div className="flex flex-row">
-                      <Label className="basis-1/4 mt-3 font-medium" htmlFor="beta">
+                      <Label
+                        className="basis-1/4 mt-3 font-medium"
+                        htmlFor="beta"
+                      >
                         Beta prior
                       </Label>
                       <div className="basis-3/4 flex flex-col">
@@ -415,11 +424,14 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                 <div className="basis-1/2 grow">
                   <Field className="flex flex-col mb-4">
                     <div className="flex flex-row">
-                      <Label className="basis-1/4 mt-3 font-medium" htmlFor="mu">
+                      <Label
+                        className="basis-1/4 mt-3 font-medium"
+                        htmlFor="mu"
+                      >
                         Mean prior
                       </Label>
                       <div className="basis-3/4 flex flex-col">
-                      <Input
+                        <Input
                           id={`arm-${index + 1}-mu`}
                           name={`arm-${index + 1}-mu`}
                           type="number"
@@ -427,7 +439,9 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                           defaultValue={0}
                           value={
                             priorType === "normal" && "mu" in arm
-                              ? arm.mu === 0 ? "0" : arm.mu || ""
+                              ? arm.mu === 0
+                                ? "0"
+                                : arm.mu || ""
                               : ""
                           }
                           onChange={(e) => {
@@ -455,7 +469,10 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                   </Field>
                   <Field className="flex flex-col">
                     <div className="flex flex-row">
-                      <Label className="basis-1/4 mt-3 font-medium" htmlFor="sigma">
+                      <Label
+                        className="basis-1/4 mt-3 font-medium"
+                        htmlFor="sigma"
+                      >
                         Standard deviation
                       </Label>
                       <div className="basis-3/4 flex flex-col">
@@ -467,7 +484,9 @@ export default function AddMABArms({ onValidate }: StepComponentProps) {
                           placeholder="Enter a float as standard deviation for the prior"
                           value={
                             priorType === "normal" && "sigma" in arm
-                              ? arm.sigma === 0 ? "0" : arm.sigma || ""
+                              ? arm.sigma === 0
+                                ? "0"
+                                : arm.sigma || ""
                               : ""
                           }
                           onChange={(e) => {

@@ -19,7 +19,7 @@ export default function Experiments() {
 
   const { token } = useAuth();
 
-useEffect(() => {
+  useEffect(() => {
     setLoading(true);
     getAllMABExperiments(token!).then((data) => {
       setMABExperiments(data);
@@ -61,7 +61,10 @@ useEffect(() => {
           <DividerWithTitle title="Contextual Multi-Armed Bandit Experiments" />
           <div className="my-4"></div>
           <div>
-            <ExperimentCardGrid experiments={cmabExperiments} methodType="cmab" />
+            <ExperimentCardGrid
+              experiments={cmabExperiments}
+              methodType="cmab"
+            />
             <Link href="/experiments/add">
               <FloatingAddButton />
             </Link>
@@ -72,7 +75,7 @@ useEffect(() => {
         <FloatingAddButton />
       </Link>
     </div>
-) : (
+  ) : (
     <div
       className="grid grow grid-rows-1 items-center justify-items-center sm:p-20 "
       style={{ minHeight: "calc(100vh - 200px)" }}
@@ -87,10 +90,12 @@ useEffect(() => {
 }
 
 const ExperimentCardGrid = ({
-  experiments, methodType }:
-  { experiments: MABBeta[] | MABNormal[] | CMAB[],
-    methodType: MethodType
-  }) => {
+  experiments,
+  methodType,
+}: {
+  experiments: MABBeta[] | MABNormal[] | CMAB[];
+  methodType: MethodType;
+}) => {
   return (
     <ul
       role="list"

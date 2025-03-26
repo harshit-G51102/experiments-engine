@@ -1,5 +1,10 @@
 import api from "@/utils/api";
-import { MABExperimentStateNormal, MABExperimentStateBeta, ABExperimentState, CMABExperimentState } from "./types";
+import {
+  MABExperimentStateNormal,
+  MABExperimentStateBeta,
+  ABExperimentState,
+  CMABExperimentState,
+} from "./types";
 import { ExperimentState } from "./types";
 
 const createNewExperiment = async ({
@@ -10,7 +15,11 @@ const createNewExperiment = async ({
   token: string | null;
 }) => {
   let endpoint: string;
-  let newExperimentData: MABExperimentStateNormal | MABExperimentStateBeta | ABExperimentState | CMABExperimentState;
+  let newExperimentData:
+    | MABExperimentStateNormal
+    | MABExperimentStateBeta
+    | ABExperimentState
+    | CMABExperimentState;
   let convertedData = null;
 
   if (experimentData.methodType == "mab") {
@@ -29,13 +38,11 @@ const createNewExperiment = async ({
       arms: rest.arms,
       notifications: rest.notifications,
     };
-
   } else if (experimentData.methodType == "ab") {
     newExperimentData = experimentData as ABExperimentState;
     endpoint = "/ab/";
     const { methodType, ...rest } = newExperimentData;
-    convertedData = {...rest};
-
+    convertedData = { ...rest };
   } else if (experimentData.methodType == "cmab") {
     newExperimentData = experimentData as CMABExperimentState;
     endpoint = "/contextual_mab/";
@@ -79,7 +86,6 @@ const getAllMABExperiments = async (token: string | null) => {
     throw new Error(`Error fetching all experiments: ${error.message}`);
   }
 };
-
 
 const getAllCMABExperiments = async (token: string | null) => {
   try {

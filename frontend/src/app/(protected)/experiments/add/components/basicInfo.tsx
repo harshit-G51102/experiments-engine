@@ -156,7 +156,8 @@ export default function AddBasicInfo({
             <Radio id="cmab" value="cmab" />
             <Label htmlFor="cmab">Contextual Bandit</Label>
             <Description>
-              A method that automatically converges to the best performing arm conditional on context.
+              A method that automatically converges to the best performing arm
+              conditional on context.
             </Description>
           </RadioField>
           <RadioField>

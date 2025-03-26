@@ -149,17 +149,17 @@ interface CMABExperimentState extends ExperimentStateBase {
   notifications: Notifications;
 }
 
-
 interface CMAB extends CMABExperimentState {
   experiment_id: number;
   is_active: boolean;
   arms: CMABArm[];
 }
 
-type ExperimentState = MABExperimentStateNormal
-| MABExperimentStateBeta
-| CMABExperimentState
-| ABExperimentState;
+type ExperimentState =
+  | MABExperimentStateNormal
+  | MABExperimentStateBeta
+  | CMABExperimentState
+  | ABExperimentState;
 
 export type {
   AB,

@@ -34,7 +34,7 @@ const patchMessageReadStatus = async ({
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      },
+      }
     );
     return response.data as Message[];
   } catch (error) {

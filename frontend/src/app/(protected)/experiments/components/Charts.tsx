@@ -8,7 +8,7 @@ const COLORMAP = d3.interpolateSpectral;
 
 // Beta-Binary Distribution
 const lngamma = (x: number): number => {
-  if (typeof x!== "number" || isNaN(x) || x <= 0) {
+  if (typeof x !== "number" || isNaN(x) || x <= 0) {
     return NaN;
   }
   return Math.log(gamma(x));
@@ -31,7 +31,9 @@ const BetaLineChart = ({
   posteriors: BetaParams[];
 }) => {
   const num_arms = priors.length;
-  const COLORS = Array.from({ length: num_arms }, (_, i) => COLORMAP(i / num_arms));
+  const COLORS = Array.from({ length: num_arms }, (_, i) =>
+    COLORMAP(i / num_arms)
+  );
 
   // Define the range of x-values
   const x = Array.from({ length: 100 }, (_, i) => i / 100);
@@ -45,7 +47,7 @@ const BetaLineChart = ({
     );
 
     posteriors.forEach(({ name }, i) => {
-      point[`Posterior - ${i}_${name}`] = posteriorPDFs[i]
+      point[`Posterior - ${i}_${name}`] = posteriorPDFs[i];
     });
 
     const priorPDFs = priors.map(({ alpha, beta }) =>
@@ -59,59 +61,67 @@ const BetaLineChart = ({
   });
 
   const tooltipFormatter = (value: string, name: string) => {
-    return [Number(value).toFixed(2), name]
+    return [Number(value).toFixed(2), name];
   };
 
   return (
-    <AreaChart width={700} height={400} data={data} margin={{ top: 10, right: 10, bottom: 15, left: 10 }}>
+    <AreaChart
+      width={700}
+      height={400}
+      data={data}
+      margin={{ top: 10, right: 10, bottom: 15, left: 10 }}
+    >
       <XAxis
-      // padding={{ left: 40, right: 40 }}
-      dataKey="x"
-      allowDecimals={true}
-      ticks={xlabel}
-      domain={[0, 1]}
-      label={{value: "Arm parameter", position: "insideBottom", offset: -10}}
+        // padding={{ left: 40, right: 40 }}
+        dataKey="x"
+        allowDecimals={true}
+        ticks={xlabel}
+        domain={[0, 1]}
+        label={{
+          value: "Arm parameter",
+          position: "insideBottom",
+          offset: -10,
+        }}
       />
       <YAxis
-      // padding={{ top: 20, bottom: 20 }}
-      allowDecimals={true}
-      tick={false}
-      domain={[0, 1]}
-      label={{ value: "Density", angle: -90, position: "insideLeft" }}
+        // padding={{ top: 20, bottom: 20 }}
+        allowDecimals={true}
+        tick={false}
+        domain={[0, 1]}
+        label={{ value: "Density", angle: -90, position: "insideLeft" }}
       />
       <Tooltip
         contentStyle={{
           backgroundColor: "rgba(64, 64, 64, 0.8)",
           border: "none",
           borderRadius: "4px",
-          color: "white"
+          color: "white",
         }}
         formatter={tooltipFormatter}
       />
 
       {posteriors.map((dist, i) => (
-      <Area
-        key={`Posterior - ${i}_${dist.name}`}
-        dataKey={`Posterior - ${i}_${dist.name}`}
-        stroke={COLORS[i]}
-        fill={COLORS[i]}
-        fillOpacity={0.3}
-      />
+        <Area
+          key={`Posterior - ${i}_${dist.name}`}
+          dataKey={`Posterior - ${i}_${dist.name}`}
+          stroke={COLORS[i]}
+          fill={COLORS[i]}
+          fillOpacity={0.3}
+        />
       ))}
       {priors.map((dist, i) => (
-      <Area
-        key={`Prior - ${i}_${dist.name}`}
-        dataKey={`Prior - ${i}_${dist.name}`}
-        stroke={COLORS[i]}
-        strokeDasharray="5 5"
-        fill={undefined}
-        fillOpacity={0.1}
-      />
+        <Area
+          key={`Prior - ${i}_${dist.name}`}
+          dataKey={`Prior - ${i}_${dist.name}`}
+          stroke={COLORS[i]}
+          strokeDasharray="5 5"
+          fill={undefined}
+          fillOpacity={0.1}
+        />
       ))}
     </AreaChart>
   );
 };
-
 
 // Normal distribution
 
@@ -133,7 +143,9 @@ const NormalLineChart = ({
   posteriors: GaussianParams[];
 }) => {
   const num_arms = priors.length;
-  const COLORS = Array.from({ length: num_arms }, (_, i) => COLORMAP(i / num_arms));
+  const COLORS = Array.from({ length: num_arms }, (_, i) =>
+    COLORMAP(i / num_arms)
+  );
 
   // Define the range of x-values
   const x = Array.from({ length: 1000 }, (_, i) => -5 + (i * 10) / 1000);
@@ -147,12 +159,10 @@ const NormalLineChart = ({
     );
 
     posteriors.forEach(({ name }, i) => {
-      point[`Posterior - ${i}_${name}`] = posteriorPDFs[i]
+      point[`Posterior - ${i}_${name}`] = posteriorPDFs[i];
     });
 
-    const priorPDFs = priors.map(({ mu, sigma }) =>
-      normalPDF(xVal, mu, sigma)
-    );
+    const priorPDFs = priors.map(({ mu, sigma }) => normalPDF(xVal, mu, sigma));
 
     priors.forEach(({ name }, i) => {
       point[`Prior - ${i}_${name}`] = priorPDFs[i];
@@ -161,58 +171,66 @@ const NormalLineChart = ({
   });
 
   const tooltipFormatter = (value: string, name: string) => {
-    return [Number(value).toFixed(2), name]
+    return [Number(value).toFixed(2), name];
   };
 
   return (
-    <AreaChart width={700} height={400} data={data} margin={{ top: 10, right: 10, bottom: 15, left: 10 }}>
+    <AreaChart
+      width={700}
+      height={400}
+      data={data}
+      margin={{ top: 10, right: 10, bottom: 15, left: 10 }}
+    >
       <XAxis
-      // padding={{ left: 40, right: 40 }}
-      dataKey="x"
-      allowDecimals={true}
-      ticks={xlabel}
-      domain={[-5, 5]}
-      label={{value: "Arm parameter", position: "insideBottom", offset: -10}}
+        // padding={{ left: 40, right: 40 }}
+        dataKey="x"
+        allowDecimals={true}
+        ticks={xlabel}
+        domain={[-5, 5]}
+        label={{
+          value: "Arm parameter",
+          position: "insideBottom",
+          offset: -10,
+        }}
       />
       <YAxis
-      // padding={{ top: 20, bottom: 20 }}
-      allowDecimals={true}
-      tick={false}
-      // domain={[0, 1]}
-      label={{ value: "Density", angle: -90, position: "insideLeft" }}
+        // padding={{ top: 20, bottom: 20 }}
+        allowDecimals={true}
+        tick={false}
+        // domain={[0, 1]}
+        label={{ value: "Density", angle: -90, position: "insideLeft" }}
       />
       <Tooltip
         contentStyle={{
           backgroundColor: "rgba(64, 64, 64, 0.8)",
           border: "none",
           borderRadius: "4px",
-          color: "white"
+          color: "white",
         }}
         formatter={tooltipFormatter}
       />
 
       {posteriors.map((dist, i) => (
-      <Area
-        key={`Posterior - ${i}_${dist.name}`}
-        dataKey={`Posterior - ${i}_${dist.name}`}
-        stroke={COLORS[i]}
-        fill={COLORS[i]}
-        fillOpacity={0.3}
-      />
+        <Area
+          key={`Posterior - ${i}_${dist.name}`}
+          dataKey={`Posterior - ${i}_${dist.name}`}
+          stroke={COLORS[i]}
+          fill={COLORS[i]}
+          fillOpacity={0.3}
+        />
       ))}
       {priors.map((dist, i) => (
-      <Area
-        key={`Prior - ${i}_${dist.name}`}
-        dataKey={`Prior - ${i}_${dist.name}`}
-        stroke={COLORS[i]}
-        strokeDasharray="5 5"
-        fill={undefined}
-        fillOpacity={0.1}
-      />
+        <Area
+          key={`Prior - ${i}_${dist.name}`}
+          dataKey={`Prior - ${i}_${dist.name}`}
+          stroke={COLORS[i]}
+          strokeDasharray="5 5"
+          fill={undefined}
+          fillOpacity={0.1}
+        />
       ))}
     </AreaChart>
   );
 };
-
 
 export { BetaLineChart, NormalLineChart };

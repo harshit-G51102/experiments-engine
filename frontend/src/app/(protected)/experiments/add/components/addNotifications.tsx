@@ -103,7 +103,9 @@ export default function AddNotifications({ onValidate }: StepComponentProps) {
                     numberOfTrials: Number(e.target.value),
                   });
                 }}
-                className={`${inputClasses} ${errors.numberOfTrials ? "border-red-500" : ""}`}
+                className={`${inputClasses} ${
+                  errors.numberOfTrials ? "border-red-500" : ""
+                }`}
                 onClick={(e) => e.stopPropagation()}
               />
               {" trials"}
@@ -136,7 +138,9 @@ export default function AddNotifications({ onValidate }: StepComponentProps) {
                     daysElapsed: Number(e.target.value),
                   })
                 }
-                className={`${inputClasses} ${errors.daysElapsed ? "border-red-500" : ""}`}
+                className={`${inputClasses} ${
+                  errors.daysElapsed ? "border-red-500" : ""
+                }`}
                 onClick={(e) => e.stopPropagation()}
               />
               {" days"}
@@ -169,7 +173,9 @@ export default function AddNotifications({ onValidate }: StepComponentProps) {
                     percentBetterThreshold: Number(e.target.value),
                   })
                 }
-                className={`${inputClasses} ${errors.percentBetterThreshold ? "border-red-500" : ""}`}
+                className={`${inputClasses} ${
+                  errors.percentBetterThreshold ? "border-red-500" : ""
+                }`}
                 onClick={(e) => e.stopPropagation()}
               />
               {"%"}

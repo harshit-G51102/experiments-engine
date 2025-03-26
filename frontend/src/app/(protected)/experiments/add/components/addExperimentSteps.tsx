@@ -54,6 +54,7 @@ const ABsteps: Step[] = [
 const AllSteps = {
   mab: MABsteps,
   cmab: CMABsteps,
-  ab: ABsteps };
+  ab: ABsteps,
+};
 
 export { AllSteps };
