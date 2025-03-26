@@ -5,7 +5,6 @@ import { createContext, useContext, useState } from "react";
 import {
   ExperimentState,
   CMABExperimentState,
-  CMAB,
   CMABArm,
   MABExperimentStateBeta,
   MABExperimentStateNormal,
@@ -40,9 +39,9 @@ export const ExperimentProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const baseDescr = { name: "", description: "" };
-  const [methodType, setMethodType] = useState<MethodType>("mab");
-  const [priorType, setPriorType] = useState<PriorType>("beta");
-  const [rewardType, setRewardType] = useState<RewardType>("binary");
+  const [methodType] = useState<MethodType>("mab");
+  const [priorType] = useState<PriorType>("beta");
+  const [rewardType] = useState<RewardType>("binary");
 
   const baseMABState = {
     ...baseDescr,
@@ -87,7 +86,7 @@ export const ExperimentProvider: React.FC<{ children: React.ReactNode }> = ({
       const { priorType, ...rest } = baseMABState;
       return {
         ...rest,
-        priorType: "normal",
+        priorType: priorType === "normal" ? priorType : "normal",
         arms: [
           { name: "", description: "", mu_init: 0, sigma_init: 1 } as CMABArm,
           { name: "", description: "", mu_init: 0, sigma_init: 1 } as CMABArm,
