@@ -72,7 +72,7 @@ export function MABBetaCards({
         }}
       >
         <Card
-          className={`${isExpanded ? null : "cursor-pointer"} z-60 w-full max-w-[800px] dark:bg-black
+          className={`${isExpanded ? null : "cursor-pointer"} z-60 w-full min-w-[400px] max-w-[800px] dark:bg-black
                       dark:border-zinc-400 border-zinc-800 dark:shadown-zinc-600`}
           onClick={(e) => {
             e.stopPropagation();
@@ -217,7 +217,7 @@ export function MABNormalCards({
         }}
       >
         <Card
-          className={`${isExpanded ? null : "cursor-pointer"} z-60 w-full max-w-[800px] dark:bg-black
+          className={`${isExpanded ? null : "cursor-pointer"} z-60 w-full min-w-[400px] max-w-[800px] dark:bg-black
                       dark:border-zinc-400 border-zinc-800 dark:shadown-zinc-600`}
           onClick={(e) => {
             e.stopPropagation();
