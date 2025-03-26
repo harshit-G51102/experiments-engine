@@ -30,17 +30,24 @@ class TestCreateUser:
 
     def test_user_id_1_can_create_user(self, client: TestClient) -> None:
         response = client.post(
-            "/user/", json={"username": TEST_USERNAME, "password": TEST_PASSWORD}
+            "/user/", json={"username": "user_test", "password": "password_test"}
         )
 
         assert response.status_code == 200
 
     def test_user_id_2_cannot_create_user(self, client: TestClient) -> None:
+        # Register a user
         response = client.post(
             "/user/",
-            json={"username": TEST_USERNAME, "password": TEST_PASSWORD},
+            json={"username": "user_test1", "password": "password_test"},
         )
+        assert response.status_code == 200
 
+        # Try to register another user
+        response = client.post(
+            "/user/",
+            json={"username": "user_test1", "password": "password_test"},
+        )
         assert response.status_code == 400
 
     def test_get_current_user(
